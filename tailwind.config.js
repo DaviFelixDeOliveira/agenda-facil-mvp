@@ -14,7 +14,7 @@ module.exports = {
           DEFAULT: '#111827',
           dark: '#111827',
         },
-        brand: '#E11D48',
+        brand: '#efb2bf',
         background: '#FAFAFA',
         surface: '#FFFFFF',
         success: '#10B981',

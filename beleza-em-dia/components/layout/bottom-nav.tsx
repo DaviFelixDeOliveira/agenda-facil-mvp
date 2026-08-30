@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, CalendarDays, Users, Wallet, User } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, Users, Wallet, User, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Clientes', href: '/clientes', icon: Users },
   { label: 'Finanças', href: '/financeiro', icon: Wallet },
   { label: 'Perfil', href: '/perfil', icon: User },
+  { label: 'Config.', href: '/configuracoes', icon: Settings },
 ]
 
 export function BottomNav() {
@@ -27,15 +28,15 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium py-1 px-2 transition-colors min-w-[56px]',
+                'flex flex-col items-center justify-center gap-0.5 text-[9px] font-medium py-1 px-1 transition-colors min-w-[48px]',
                 active ? 'text-brand' : 'text-gray-400'
               )}
             >
               <div className={cn(
-                'flex items-center justify-center w-8 h-8 rounded-lg transition-colors',
+                'flex items-center justify-center w-7 h-7 rounded-lg transition-colors',
                 active && 'bg-rose-50'
               )}>
-                <Icon className={cn('w-5 h-5', active && 'text-brand')} />
+                <Icon className={cn('w-[18px] h-[18px]', active && 'text-brand')} />
               </div>
               {item.label}
             </Link>

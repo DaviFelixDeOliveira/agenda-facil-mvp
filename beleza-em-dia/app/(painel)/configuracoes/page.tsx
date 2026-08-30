@@ -417,6 +417,14 @@ export default function ConfiguracoesPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 lg:p-6 space-y-6">
           {renderBackButton('Agenda e Expediente')}
 
+          {/* Info Box — Diferença entre Configuração e Agenda */}
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3.5 flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-900 leading-relaxed">
+              <strong>Esta tela define as regras de funcionamento da sua agenda</strong> — os dias, horários e intervalos que você trabalha. A tela de &ldquo;Agenda&rdquo; no menu é onde você visualiza e gerencia os agendamentos com clientes.
+            </p>
+          </div>
+
           {/* Modelo de Atendimento */}
           <div className="space-y-3">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Modelo de Atendimento</p>
@@ -437,7 +445,12 @@ export default function ConfiguracoesPage() {
                   <p className="font-bold text-sm text-[#111827]">Agenda Fixa</p>
                   {agendaType === 'fixa' && <div className="w-2.5 h-2.5 rounded-full bg-[#111827]" />}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Seus horários se repetem semanalmente. Ideal para rotinas estabelecidas.</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Seus horários se repetem semanalmente. Ideal para rotinas estabelecidas.
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1.5 italic">
+                  Ex: Segunda a sexta, 09:00 às 18:00
+                </p>
               </button>
 
               <button
@@ -456,12 +469,17 @@ export default function ConfiguracoesPage() {
                   <p className="font-bold text-sm text-[#111827]">Agenda Livre / Flexível</p>
                   {agendaType === 'livre' && <div className="w-2.5 h-2.5 rounded-full bg-[#111827]" />}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Configure os horários dia a dia no calendário. Ideal para freelancers e atendimento sob demanda.</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Configure os horários dia a dia no calendário. Ideal para freelancers e atendimento sob demanda.
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1.5 italic">
+                  Ex: Segunda 10:00–14:00, Quarta 15:00–20:00
+                </p>
               </button>
             </div>
           </div>
 
-          {/* Grade Semanal */}
+          {/* Grade Semanal com Intervalos */}
           <div className="space-y-3 pt-2 border-t border-gray-100">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dias e Horários da Semana</p>
@@ -472,70 +490,90 @@ export default function ConfiguracoesPage() {
               {weekSchedule.map((day, idx) => (
                 <div
                   key={day.day}
-                  className={`p-3.5 rounded-xl border transition-all ${
-                    day.active ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50/50 opacity-60'
+                  className={`p-4 rounded-2xl border transition-all ${
+                    day.active ? 'border-gray-200 bg-white shadow-sm' : 'border-gray-100 bg-gray-50/50 opacity-60'
                   }`}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    {/* Toggle e Nome */}
+                  {/* Toggle e Nome do Dia */}
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold text-[#111827]">{day.day}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...weekSchedule]
+                        updated[idx].active = !updated[idx].active
+                        setWeekSchedule(updated)
+                        triggerChange()
+                      }}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                        day.active ? 'bg-brand' : 'bg-gray-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          day.active ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Horários + Intervalo */}
+                  {day.active ? (
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <div className="flex-1 w-full">
+                          <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Início</label>
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
+                            <input
+                              type="time"
+                              defaultValue={day.start}
+                              className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
+                              onChange={triggerChange}
+                            />
+                            <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          </div>
+                        </div>
+
+                        <div className="flex-1 w-full">
+                          <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Fim</label>
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
+                            <input
+                              type="time"
+                              defaultValue={day.end}
+                              className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
+                              onChange={triggerChange}
+                            />
+                            <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Botão Adicionar Intervalo */}
                       <button
                         type="button"
                         onClick={() => {
-                          const updated = [...weekSchedule]
-                          updated[idx].active = !updated[idx].active
-                          setWeekSchedule(updated)
+                          toast.info(`Intervalo de almoço adicionado para ${day.day}: 12:00 – 13:00`)
                           triggerChange()
                         }}
-                        className={`w-10 h-6 flex items-center rounded-full p-1 transition-colors ${
-                          day.active ? 'bg-brand' : 'bg-gray-300'
-                        }`}
+                        className="text-xs text-brand font-semibold hover:underline inline-flex items-center gap-1"
                       >
-                        <div
-                          className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                            day.active ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
+                        + Adicionar intervalo
                       </button>
-                      <span className="text-sm font-bold text-[#111827]">{day.day}</span>
                     </div>
-
-                    {/* Horários */}
-                    {day.active ? (
-                      <div className="flex items-center gap-2 text-xs">
-                        <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5">
-                          <span className="text-gray-400">Início:</span>
-                          <input
-                            type="time"
-                            defaultValue={day.start}
-                            className="bg-transparent font-semibold text-[#111827] outline-none"
-                            onChange={triggerChange}
-                          />
-                        </div>
-                        <span className="text-gray-400">até</span>
-                        <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5">
-                          <span className="text-gray-400">Fim:</span>
-                          <input
-                            type="time"
-                            defaultValue={day.end}
-                            className="bg-transparent font-semibold text-[#111827] outline-none"
-                            onChange={triggerChange}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-xs font-semibold text-gray-400 italic">Fechado / Folga</span>
-                    )}
-                  </div>
+                  ) : (
+                    <span className="text-xs font-semibold text-gray-400 italic">Fechado / Folga</span>
+                  )}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Regras de Tempo e Intervalo */}
-          <div className="space-y-3 pt-2 border-t border-gray-100">
+          {/* Regras de Tempo, Intervalo e Políticas */}
+          <div className="space-y-4 pt-2 border-t border-gray-100">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Regras de Tempo e Pausas</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-[#111827] mb-1.5">Duração Padrão dos Serviços</label>
                 <select
@@ -586,7 +624,50 @@ export default function ConfiguracoesPage() {
                   <option value="20">20 minutos</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Antecedência Mínima para Agendamento</label>
+                <select
+                  defaultValue="2"
+                  onChange={triggerChange}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:ring-2 focus:ring-brand outline-none"
+                >
+                  <option value="1">1 hora antes</option>
+                  <option value="2">2 horas antes (recomendado)</option>
+                  <option value="4">4 horas antes</option>
+                  <option value="24">24 horas antes (1 dia)</option>
+                </select>
+              </div>
             </div>
+          </div>
+
+          {/* Política de Cancelamento */}
+          <div className="space-y-3 pt-2 border-t border-gray-100">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Política de Cancelamento</p>
+            <select
+              defaultValue="24"
+              onChange={triggerChange}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:ring-2 focus:ring-brand outline-none"
+            >
+              <option value="2">Cliente pode cancelar até 2 horas antes</option>
+              <option value="12">Cliente pode cancelar até 12 horas antes</option>
+              <option value="24">Cliente pode cancelar até 24 horas antes (padrão)</option>
+              <option value="48">Cliente pode cancelar até 48 horas antes</option>
+            </select>
+            <p className="text-[11px] text-gray-400">
+              Cancelamentos fora desse prazo podem resultar na retenção do sinal Pix, se ativado.
+            </p>
+          </div>
+
+          {/* Resumo Visual da Agenda Configurada */}
+          <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+            <p className="text-xs font-bold text-[#111827] mb-2">📋 Resumo da configuração atual:</p>
+            <ul className="text-xs text-gray-600 space-y-1">
+              <li>• Modelo: <strong>{agendaType === 'fixa' ? 'Agenda Fixa (Semanal)' : 'Agenda Livre (Flexível)'}</strong></li>
+              <li>• Dias ativos: <strong>{weekSchedule.filter(d => d.active).map(d => d.day).join(', ') || 'Nenhum'}</strong></li>
+              <li>• Duração padrão do serviço: <strong>{serviceDuration} min</strong></li>
+              <li>• Intervalo entre atendimentos: <strong>{serviceInterval === '0' ? 'Sem intervalo' : `${serviceInterval} min`}</strong></li>
+            </ul>
           </div>
 
           {/* Botões de Ação */}
@@ -606,6 +687,8 @@ export default function ConfiguracoesPage() {
           </div>
         </div>
       )}
+
+
 
       {/* ========================================================
           SEÇÃO 3: PAGAMENTO & SINAL PIX (Regra Crítica)

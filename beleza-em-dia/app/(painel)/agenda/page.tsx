@@ -77,15 +77,9 @@ export default function AgendaPage() {
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#111827]">Minha Agenda</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Gerencie seus horários e atendimentos</p>
-        </div>
-        <button className="flex items-center gap-1.5 px-4 py-2.5 bg-brand text-white rounded-xl text-sm font-semibold hover:bg-rose-700 transition-colors shadow-sm">
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Novo Agendamento</span>
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-[#111827]">Minha Agenda</h1>
+        <p className="text-gray-500 text-sm mt-0.5">Gerencie seus horários e atendimentos</p>
       </div>
 
       {/* Seletor de Semana - fiel ao PDF */}

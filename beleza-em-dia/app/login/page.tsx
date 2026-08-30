@@ -24,14 +24,14 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-6">
       <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6">
-        {/* Logo Centralizada em Destaque */}
+        {/* Logo Grande Centralizada — Fiel ao Protótipo */}
         <div className="flex flex-col items-center text-center space-y-3">
-          <div className="w-20 h-20 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center overflow-hidden shadow-sm">
-            <Image src="/logo.png" alt="Beleza em Dia" width={80} height={80} className="object-cover" priority />
+          <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-rose-50/50 border border-rose-100 flex items-center justify-center overflow-hidden shadow-md">
+            <Image src="/logo.png" alt="Beleza em Dia" width={128} height={128} className="object-cover" priority />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#111827]">Beleza em Dia</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Acesse sua conta profissional</p>
+            <h1 className="text-2xl font-bold text-[#111827]">Beleza em Dia</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Acesse sua conta profissional</p>
           </div>
         </div>
 
@@ -43,7 +43,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-[#111827] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 bg-white text-sm text-[#111827] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
               placeholder="seu@email.com"
               required
             />
@@ -61,7 +61,7 @@ export default function LoginPage() {
                 type={showPw ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 bg-white text-sm text-[#111827] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3.5 pr-11 rounded-2xl border border-gray-200 bg-white text-sm text-[#111827] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                 placeholder="••••••••"
                 required
               />
@@ -79,7 +79,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-[#111827] text-white rounded-xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+            className="w-full py-3.5 bg-[#111827] text-white rounded-2xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
           >
             {loading ? (
               <>
