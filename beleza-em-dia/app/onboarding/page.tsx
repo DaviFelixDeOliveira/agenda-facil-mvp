@@ -1,0 +1,409 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
+import {
+  Camera,
+  Plus,
+  Trash2,
+  Clock,
+  ArrowRight,
+  Check,
+  Calendar,
+  Home,
+  CheckCircle2,
+} from 'lucide-react'
+
+export default function OnboardingPage() {
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  const router = useRouter()
+
+  // Passo 1: Perfil
+  const [studioName, setStudioName] = useState('Studio Bela Face')
+  const [specialty, setSpecialty] = useState('Manicure & Estética')
+  const [bio, setBio] = useState('')
+  const [domicilio, setDomicilio] = useState(false)
+
+  // Passo 2: Agenda
+  const [days, setDays] = useState([
+    { name: 'Segunda-feira', active: true, start: '09:00', end: '18:00', hasBreak: false },
+    { name: 'Terça-feira', active: true, start: '09:00', end: '18:00', hasBreak: false },
+    { name: 'Quarta-feira', active: true, start: '09:00', end: '18:00', hasBreak: false },
+    { name: 'Quinta-feira', active: true, start: '09:00', end: '18:00', hasBreak: false },
+    { name: 'Sexta-feira', active: true, start: '09:00', end: '18:00', hasBreak: false },
+    { name: 'Sábado', active: false, start: '09:00', end: '14:00', hasBreak: false },
+    { name: 'Domingo', active: false, start: '', end: '', hasBreak: false },
+  ])
+
+  // Passo 3: Serviços
+  const [services, setServices] = useState([
+    { id: 1, name: 'Manicure', price: '35,00', duration: '45', checked: true },
+    { id: 2, name: 'Pedicure', price: '45,00', duration: '50', checked: false },
+    { id: 3, name: 'Design de Sobrancelhas', price: '45,00', duration: '30', checked: false },
+  ])
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-6">
+      <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6">
+        {/* Header com navegação do wizard */}
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+          <span className="font-bold text-[#111827] text-base">Beleza em Dia</span>
+          <Link href="/dashboard" className="text-xs text-gray-400 hover:text-gray-600 font-semibold">
+            Sair
+          </Link>
+        </div>
+
+        {/* Indicador de Passos */}
+        {step < 4 && (
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-xs font-bold">
+              <span className="text-gray-400">PASSO {step} DE 3</span>
+              <span className="text-brand uppercase tracking-wider">
+                {step === 1 ? 'PERFIL' : step === 2 ? 'AGENDA' : 'FINALIZANDO'}
+              </span>
+            </div>
+            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-brand rounded-full transition-all duration-300"
+                style={{ width: `${(step / 3) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            PASSO 1: CONFIGURAÇÕES INICIAIS DE PERFIL (Tela 7 do PDF)
+           ======================================================== */}
+        {step === 1 && (
+          <div className="space-y-5 animate-fade-in">
+            <div>
+              <h1 className="text-xl font-bold text-[#111827]">Configure seu Perfil</h1>
+              <p className="text-xs text-gray-500 mt-0.5">Adicione suas informações profissionais para que os clientes conheçam seu trabalho.</p>
+            </div>
+
+            {/* Upload de Foto */}
+            <div className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50">
+              <div className="w-20 h-20 rounded-2xl bg-white border border-gray-200 flex items-center justify-center relative shadow-sm mb-2">
+                <Camera className="w-8 h-8 text-gray-400" />
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-brand text-white rounded-full flex items-center justify-center shadow">
+                  <Plus className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <p className="text-xs font-bold text-brand">Adicionar Foto</p>
+              <p className="text-[10px] text-gray-400">Recomendado: 500×500px</p>
+            </div>
+
+            {/* Inputs */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Nome do Estúdio/Salão</label>
+                <input
+                  type="text"
+                  value={studioName}
+                  onChange={(e) => setStudioName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none"
+                  placeholder="Ex: Studio Bela Face"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Especialidade Principal</label>
+                <select
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:ring-2 focus:ring-brand outline-none"
+                >
+                  <option value="Manicure & Estética">Manicure & Nail Art</option>
+                  <option value="Cabelereira">Cabelereira</option>
+                  <option value="Design de Sobrancelhas">Design de Sobrancelhas</option>
+                  <option value="Estética Geral">Estética Geral</option>
+                </select>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Bio Profissional</label>
+                  <span className="text-[10px] text-gray-400">{bio.length}/150</span>
+                </div>
+                <textarea
+                  value={bio}
+                  maxLength={150}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none resize-none"
+                  placeholder="Conte um pouco sobre sua experiência e diferenciais..."
+                />
+              </div>
+
+              {/* Toggle Domicílio */}
+              <div className="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Home className="w-5 h-5 text-brand" />
+                  <div>
+                    <p className="text-sm font-bold text-[#111827]">Atendimento a Domicílio</p>
+                    <p className="text-xs text-gray-500">Ofereço serviços na casa do cliente</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDomicilio(!domicilio)}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                    domicilio ? 'bg-brand' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                      domicilio ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setStep(2)}
+              className="w-full py-3.5 bg-brand text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-colors shadow-sm flex items-center justify-center gap-2"
+            >
+              Próximo Passo <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* ========================================================
+            PASSO 2: DEFINA SUA AGENDA (Tela 8 do PDF)
+           ======================================================== */}
+        {step === 2 && (
+          <div className="space-y-5 animate-fade-in">
+            <div>
+              <h1 className="text-xl font-bold text-[#111827]">Defina sua Agenda</h1>
+              <p className="text-xs text-gray-500 mt-0.5">Configure os dias e horários que você estará disponível para atendimentos.</p>
+            </div>
+
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+              {days.map((day, idx) => (
+                <div key={day.name} className="p-4 rounded-2xl border border-gray-100 bg-white shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-[#111827]">{day.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...days]
+                        updated[idx].active = !updated[idx].active
+                        setDays(updated)
+                      }}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                        day.active ? 'bg-brand' : 'bg-gray-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          day.active ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {day.active && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Início</label>
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
+                            <input
+                              type="time"
+                              defaultValue={day.start}
+                              className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
+                            />
+                            <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          </div>
+                        </div>
+
+                        <div className="flex-1">
+                          <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Fim</label>
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
+                            <input
+                              type="time"
+                              defaultValue={day.end}
+                              className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
+                            />
+                            <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...days]
+                            updated[idx].active = false
+                            setDays(updated)
+                          }}
+                          className="p-2 mt-5 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = [...days]
+                          updated[idx].hasBreak = !updated[idx].hasBreak
+                          setDays(updated)
+                        }}
+                        className="text-xs text-brand font-semibold hover:underline inline-flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> Adicionar intervalo
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <button
+                onClick={() => setStep(1)}
+                className="px-5 py-3 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50"
+              >
+                Voltar
+              </button>
+              <button
+                onClick={() => setStep(3)}
+                className="flex-1 py-3.5 bg-brand text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-colors shadow-sm flex items-center justify-center gap-2"
+              >
+                Próximo Passo <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            PASSO 3: SEUS SERVIÇOS (Tela 9 do PDF)
+           ======================================================== */}
+        {step === 3 && (
+          <div className="space-y-5 animate-fade-in">
+            <div>
+              <h1 className="text-xl font-bold text-[#111827]">Seus Serviços</h1>
+              <p className="text-xs text-gray-500 mt-0.5">Selecione os serviços que você oferece ou adicione novos. Ajuste o preço e a duração média de cada um.</p>
+            </div>
+
+            <div className="space-y-3">
+              {services.map((svc, idx) => (
+                <div
+                  key={svc.id}
+                  className={`p-4 rounded-2xl border transition-all ${
+                    svc.checked ? 'border-gray-200 bg-white shadow-sm' : 'border-gray-100 bg-gray-50/50'
+                  }`}
+                >
+                  <label className="flex items-center gap-3 cursor-pointer mb-3">
+                    <input
+                      type="checkbox"
+                      checked={svc.checked}
+                      onChange={(e) => {
+                        const updated = [...services]
+                        updated[idx].checked = e.target.checked
+                        setServices(updated)
+                      }}
+                      className="w-4 h-4 rounded accent-brand"
+                    />
+                    <span className="text-sm font-bold text-[#111827]">{svc.name}</span>
+                  </label>
+
+                  {svc.checked && (
+                    <div className="space-y-3 pt-2 border-t border-gray-100 animate-fade-in">
+                      <div>
+                        <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Nome do Serviço</label>
+                        <input
+                          type="text"
+                          defaultValue={svc.name}
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Preço (R$)</label>
+                          <input
+                            type="text"
+                            defaultValue={svc.price}
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Duração (min)</label>
+                          <input
+                            type="text"
+                            defaultValue={svc.duration}
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <button
+                type="button"
+                className="w-full py-3.5 rounded-2xl border-2 border-dashed border-gray-200 text-xs font-bold text-gray-600 hover:border-brand hover:text-brand transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" /> Adicionar Novo Serviço
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <button
+                onClick={() => setStep(2)}
+                className="px-5 py-3 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50"
+              >
+                Voltar
+              </button>
+              <button
+                onClick={() => setStep(4)}
+                className="flex-1 py-3.5 bg-[#111827] text-white rounded-xl font-bold text-sm hover:bg-black transition-colors shadow-sm flex items-center justify-center gap-2"
+              >
+                Próximo <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            PASSO 4: CONTA CONFIGURADA COM SUCESSO (Tela 10 do PDF)
+           ======================================================== */}
+        {step === 4 && (
+          <div className="text-center space-y-6 animate-fade-in py-4">
+            <div className="w-20 h-20 rounded-3xl bg-brand text-white flex items-center justify-center mx-auto shadow-lg shadow-brand/20">
+              <Check className="w-10 h-10" />
+            </div>
+
+            <div>
+              <h1 className="text-2xl font-bold text-[#111827]">Tudo pronto, {studioName.split(' ')[0]}!</h1>
+              <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto leading-relaxed">
+                Sua conta foi configurada com sucesso. Agora você já pode gerenciar sua agenda e receber novos clientes.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 flex items-center gap-3 text-left">
+              <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center shrink-0">
+                <Calendar className="w-5 h-5 text-brand" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#111827]">Agenda Inteligente</p>
+                <p className="text-xs text-gray-500">Seu painel está otimizado para o dia a dia do salão.</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="w-full py-4 bg-brand text-white rounded-2xl font-bold text-sm hover:bg-rose-700 transition-colors shadow-lg shadow-brand/20 flex items-center justify-center gap-2"
+            >
+              Ir para o meu Dashboard <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
