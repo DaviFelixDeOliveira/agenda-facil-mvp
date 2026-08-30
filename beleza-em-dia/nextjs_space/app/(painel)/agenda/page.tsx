@@ -1,215 +1,299 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
-import { CalendarDays, Plus, Check, X, CheckCircle2, Clock, Ban } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { useMockStore } from '@/context/mock-store'
 import { StatusBadge } from '@/components/ui/status-badge'
-import { NovoAgendamentoModal } from '@/components/modals/novo-agendamento-modal'
-import { brl } from '@/lib/utils'
-import { toast } from 'sonner'
-import { motion, AnimatePresence } from 'framer-motion'
-import type { AppointmentType } from '@/lib/types'
+import { brl, initials } from '@/lib/utils'
+import {
+  CalendarDays,
+  Clock,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
+  CheckCircle2,
+  CalendarClock,
+  XCircle,
+  X,
+  Phone,
+} from 'lucide-react'
+import type { MockAppointment } from '@/lib/mock-data'
+
+const DAY_LABELS = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB']
+
+function getWeekDays(baseDate: Date): Date[] {
+  const day = baseDate.getDay()
+  const monday = new Date(baseDate)
+  monday.setDate(baseDate.getDate() - ((day === 0 ? 7 : day) - 1))
+  const week: Date[] = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    week.push(d)
+  }
+  return week
+}
+
+function toDateStr(d: Date): string {
+  return d.toISOString().split('T')[0]
+}
+
+// Cor da barra lateral por status
+const statusBarColor: Record<string, string> = {
+  finalizado: 'bg-blue-500',
+  confirmado: 'bg-emerald-500',
+  pendente: 'bg-amber-400',
+  cancelado: 'bg-red-400',
+}
 
 export default function AgendaPage() {
-  const [appointments, setAppointments] = useState<AppointmentType[]>([])
-  const [clients, setClients] = useState<any[]>([])
-  const [services, setServices] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [selectedDate, setSelectedDate] = useState('')
+  const { appointments, professional, updateAppointmentStatus } = useMockStore()
+  const [baseDate, setBaseDate] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(toDateStr(new Date()))
+  const [selectedAppt, setSelectedAppt] = useState<MockAppointment | null>(null)
 
-  useEffect(() => {
-    if (!selectedDate) {
-      setSelectedDate(new Date().toISOString().split('T')[0])
-    }
-  }, [selectedDate])
+  const weekDays = useMemo(() => getWeekDays(baseDate), [baseDate])
 
-  const fetchAll = () => {
-    Promise.all([
-      fetch('/api/appointments').then((r: any) => r.json()),
-      fetch('/api/clients').then((r: any) => r.json()),
-      fetch('/api/services').then((r: any) => r.json()),
-    ])
-      .then(([appts, cls, svcs]: any) => {
-        setAppointments(appts ?? [])
-        setClients(cls ?? [])
-        setServices(svcs ?? [])
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+  const dayAppts = useMemo(() =>
+    appointments
+      .filter(a => a.date === selectedDate)
+      .sort((a, b) => a.time.localeCompare(b.time)),
+    [appointments, selectedDate]
+  )
+
+  const prevWeek = () => {
+    const d = new Date(baseDate)
+    d.setDate(d.getDate() - 7)
+    setBaseDate(d)
+  }
+  const nextWeek = () => {
+    const d = new Date(baseDate)
+    d.setDate(d.getDate() + 7)
+    setBaseDate(d)
   }
 
-  useEffect(() => { fetchAll() }, [])
-
-  const dates = useMemo(() => {
-    const allDates = [...new Set((appointments ?? []).map((a: AppointmentType) => a?.date).filter(Boolean))]
-    if (!allDates.includes(selectedDate)) allDates.push(selectedDate)
-    return allDates.sort()
-  }, [appointments, selectedDate])
-
-  const filtered = useMemo(() => {
-    return (appointments ?? [])
-      .filter((a: AppointmentType) => a?.date === selectedDate)
-      .sort((a: AppointmentType, b: AppointmentType) => (a?.time ?? '').localeCompare(b?.time ?? ''))
-  }, [appointments, selectedDate])
-
-  const updateStatus = async (id: string, status: string) => {
-    try {
-      await fetch(`/api/appointments/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      })
-      setAppointments((prev: AppointmentType[]) =>
-        (prev ?? []).map((a: AppointmentType) => a?.id === id ? { ...a, status: status as any } : a)
-      )
-      toast.success(`Agendamento ${status}!`)
-    } catch {
-      toast.error('Erro ao atualizar')
-    }
-  }
-
-  const handleNewAppointment = async (data: any) => {
-    try {
-      await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      fetchAll()
-    } catch {
-      toast.error('Erro ao criar agendamento')
-    }
-  }
-
-  const formatDateLabel = (d: string) => {
-    try {
-      const date = new Date(d + 'T12:00:00')
-      const day = date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
-      return day
-    } catch { return d }
-  }
+  const todayStr = toDateStr(new Date())
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-5xl mx-auto">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#111827] flex items-center gap-2">
-            <CalendarDays className="w-6 h-6 text-brand" /> Agenda
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">Gerencie seus horários</p>
+          <h1 className="text-2xl font-bold text-[#111827]">Minha Agenda</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Gerencie seus horários e atendimentos</p>
         </div>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-brand text-white rounded-lg font-semibold text-sm hover:bg-rose-700 transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" /> Novo
+        <button className="flex items-center gap-1.5 px-4 py-2.5 bg-brand text-white rounded-xl text-sm font-semibold hover:bg-rose-700 transition-colors shadow-sm">
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Novo Agendamento</span>
         </button>
       </div>
 
-      {/* Date tabs */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
-        {dates.map((d: string) => (
-          <button
-            key={d}
-            onClick={() => setSelectedDate(d)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              selectedDate === d
-                ? 'bg-brand text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-            }`}
-          >
-            {formatDateLabel(d)}
+      {/* Seletor de Semana - fiel ao PDF */}
+      <div className="bg-white rounded-xl shadow-sm p-3">
+        <div className="flex items-center justify-between mb-3 px-1">
+          <button onClick={prevWeek} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Semana anterior">
+            <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
-        ))}
-      </div>
+          <span className="text-sm font-semibold text-[#111827]">
+            {weekDays[0].toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+          </span>
+          <button onClick={nextWeek} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Próxima semana">
+            <ChevronRight className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
 
-      {/* Appointments */}
-      {loading ? (
-        <div className="space-y-3">
-          {[1,2,3].map((i: number) => <div key={i} className="bg-white rounded-xl h-24 animate-pulse" />)}
-        </div>
-      ) : (filtered?.length ?? 0) === 0 ? (
-        <div className="bg-white rounded-xl p-10 text-center shadow-sm">
-          <CalendarDays className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">Nenhum agendamento neste dia</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <AnimatePresence mode="wait">
-            {filtered.map((a: AppointmentType, i: number) => (
-              <motion.div
-                key={a.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2, delay: i * 0.05 }}
-                className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${
-                  a.status === 'confirmado' ? 'border-l-success' :
-                  a.status === 'pendente' ? 'border-l-warning' :
-                  a.status === 'cancelado' ? 'border-l-danger' :
-                  'border-l-blue-400'
+        <div className="grid grid-cols-7 gap-1">
+          {weekDays.map((d) => {
+            const ds = toDateStr(d)
+            const isSelected = ds === selectedDate
+            const isToday = ds === todayStr
+            const dayApptCount = appointments.filter(a => a.date === ds && a.status !== 'cancelado').length
+
+            return (
+              <button
+                key={ds}
+                onClick={() => setSelectedDate(ds)}
+                className={`flex flex-col items-center py-2 px-1 rounded-xl transition-all text-center ${
+                  isSelected
+                    ? 'bg-brand text-white shadow-md shadow-brand/20'
+                    : isToday
+                      ? 'bg-rose-50 text-brand'
+                      : 'hover:bg-gray-50 text-gray-600'
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-gray-50 rounded-lg px-3 py-2 text-center min-w-[60px]">
-                      <p className="text-sm font-bold text-[#111827]">{a.time}</p>
-                      <p className="text-[10px] text-gray-500">{a.duration}min</p>
+                <span className="text-[10px] font-semibold uppercase tracking-wide opacity-80">
+                  {DAY_LABELS[d.getDay()]}
+                </span>
+                <span className={`text-lg font-bold mt-0.5 ${isSelected ? 'text-white' : ''}`}>
+                  {d.getDate()}
+                </span>
+                {dayApptCount > 0 && (
+                  <div className={`w-1.5 h-1.5 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-brand'}`} />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Data selecionada e contagem */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-[#111827]">
+          {new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
+        </p>
+        <span className="text-xs text-gray-500 font-medium">
+          {dayAppts.filter(a => a.status !== 'cancelado').length} agendamento{dayAppts.filter(a => a.status !== 'cancelado').length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      {/* Lista de agendamentos do dia - com barra lateral de status */}
+      <div className="space-y-3">
+        {dayAppts.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm py-16 text-center">
+            <CalendarDays className="w-14 h-14 text-gray-200 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">Nenhum agendamento neste dia</p>
+            <p className="text-gray-400 text-sm mt-1">Aproveite para descansar ou adicionar novos horários!</p>
+          </div>
+        ) : (
+          dayAppts.map((a) => (
+            <button
+              key={a.id}
+              onClick={() => setSelectedAppt(a)}
+              className="w-full bg-white rounded-xl shadow-sm hover:shadow-md transition-all flex overflow-hidden text-left"
+            >
+              {/* Barra lateral de status */}
+              <div className={`w-1.5 shrink-0 ${statusBarColor[a.status] || 'bg-gray-300'}`} />
+
+              <div className="flex-1 flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  {/* Horário */}
+                  <div className="text-center min-w-[48px]">
+                    <p className="text-lg font-bold text-[#111827]">{a.time}</p>
+                    <p className="text-[10px] text-gray-400">{a.duration}min</p>
+                  </div>
+                  {/* Divisor */}
+                  <div className="w-px h-10 bg-gray-100" />
+                  {/* Avatar + info */}
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-full bg-rose-50 text-brand text-xs font-bold flex items-center justify-center shrink-0">
+                      {initials(a.clientName)}
                     </div>
-                    <div>
-                      <p className="font-semibold text-[#111827]">{a.clientName}</p>
-                      <p className="text-sm text-gray-500">{a.serviceName}</p>
-                      <p className="text-xs text-gray-400 mt-1">{a.paymentMode} • {brl(a.price)}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#111827] truncate">{a.clientName}</p>
+                      <p className="text-xs text-gray-500 truncate">{a.serviceName}</p>
                     </div>
                   </div>
-                  <StatusBadge status={a.status} />
                 </div>
 
-                {a.status === 'pendente' && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-sm font-bold text-[#111827] hidden sm:block">{brl(a.price)}</span>
+                  <StatusBadge status={a.status} />
+                </div>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+
+      {/* ===== Modal de Detalhes do Agendamento ===== */}
+      {selectedAppt && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end lg:items-center justify-center" onClick={() => setSelectedAppt(null)}>
+          <div
+            className="bg-white w-full max-w-lg rounded-t-2xl lg:rounded-2xl max-h-[90vh] overflow-y-auto animate-fade-in"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="font-bold text-[#111827] text-lg">Detalhes do Agendamento</h3>
+              <button onClick={() => setSelectedAppt(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Fechar">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {/* Status + sinal */}
+              <div className="flex items-center justify-between">
+                <StatusBadge status={selectedAppt.status} />
+                {selectedAppt.signalPaid && (
+                  <span className="text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full font-medium">
+                    ✓ Sinal pago ({brl(selectedAppt.signalAmount)})
+                  </span>
+                )}
+              </div>
+
+              {/* Dados da cliente */}
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-rose-50 text-brand text-sm font-bold flex items-center justify-center">
+                  {initials(selectedAppt.clientName)}
+                </div>
+                <div>
+                  <p className="font-semibold text-[#111827]">{selectedAppt.clientName}</p>
+                  <p className="text-xs text-gray-500">
+                    {selectedAppt.clientPhone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Card do serviço */}
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-[#111827] text-sm">{selectedAppt.serviceName}</p>
+                  <p className="font-bold text-brand text-lg">{brl(selectedAppt.price)}</p>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    {selectedAppt.date.split('-').reverse().join('/')}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    {selectedAppt.time} • {selectedAppt.duration}min
+                  </span>
+                </div>
+                {selectedAppt.notes && (
+                  <p className="text-xs text-gray-500 mt-1 italic">&ldquo;{selectedAppt.notes}&rdquo;</p>
+                )}
+              </div>
+
+              {/* Botão WhatsApp */}
+              <a
+                href={`https://wa.me/55${selectedAppt.clientPhone}?text=${encodeURIComponent(`Olá ${selectedAppt.clientName.split(' ')[0]}! Seu agendamento de ${selectedAppt.serviceName} está confirmado para ${selectedAppt.date.split('-').reverse().join('/')} às ${selectedAppt.time}. Te espero! ✨ — ${professional.studioName}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Enviar Mensagem WhatsApp
+              </a>
+
+              {/* Ações */}
+              {selectedAppt.status !== 'finalizado' && selectedAppt.status !== 'cancelado' && (
+                <>
+                  <div className="flex gap-3">
                     <button
-                      onClick={() => updateStatus(a.id, 'confirmado')}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition-colors"
+                      onClick={() => { updateAppointmentStatus(selectedAppt.id, 'finalizado'); setSelectedAppt(null) }}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl font-medium text-sm hover:bg-emerald-100 transition-colors"
                     >
-                      <Check className="w-3.5 h-3.5" /> Confirmar
+                      <CheckCircle2 className="w-4 h-4" />
+                      Concluído
                     </button>
-                    <button
-                      onClick={() => updateStatus(a.id, 'cancelado')}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors"
-                    >
-                      <Ban className="w-3.5 h-3.5" /> Cancelar
+                    <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-medium text-sm hover:bg-blue-100 transition-colors">
+                      <CalendarClock className="w-4 h-4" />
+                      Remarcar
                     </button>
                   </div>
-                )}
-                {a.status === 'confirmado' && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                    <button
-                      onClick={() => updateStatus(a.id, 'finalizado')}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Concluir
-                    </button>
-                    <button
-                      onClick={() => updateStatus(a.id, 'cancelado')}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors"
-                    >
-                      <Ban className="w-3.5 h-3.5" /> Cancelar
-                    </button>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                  <button
+                    onClick={() => { updateAppointmentStatus(selectedAppt.id, 'cancelado'); setSelectedAppt(null) }}
+                    className="w-full text-center text-sm text-red-500 hover:text-red-700 font-medium py-2 transition-colors"
+                  >
+                    <XCircle className="w-4 h-4 inline mr-1" />
+                    Cancelar Agendamento
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
-
-      <NovoAgendamentoModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={handleNewAppointment}
-        services={(services ?? []).filter((s: any) => s?.active !== false)}
-        clients={clients ?? []}
-      />
     </div>
   )
 }
