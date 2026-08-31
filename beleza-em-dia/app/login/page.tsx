@@ -52,7 +52,7 @@ export default function LoginPage() {
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Senha</label>
-              <Link href="/esqueceu-senha" className="text-xs text-gray-500 hover:text-brand font-medium transition-colors">
+              <Link href="/esqueceu-senha/request" className="text-xs text-gray-500 hover:text-brand font-medium transition-colors">
                 Esqueceu a senha?
               </Link>
             </div>

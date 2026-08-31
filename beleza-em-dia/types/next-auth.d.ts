@@ -6,6 +6,7 @@ declare module 'next-auth' {
     user: {
       id: string;
       role?: string;
+      provider?: string; // 'google' | 'credentials'
       // Add custom fields here
     } & DefaultSession['user']; // includes name, email, image
   }
@@ -21,5 +22,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     role?: string;
+    provider?: string;
   }
 }

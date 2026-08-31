@@ -1,5 +1,5 @@
 generator client {
-    provider = "prisma-client-js"
+    provider      = "prisma-client-js"
     binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
@@ -8,124 +8,186 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
+// =====================================================
+// AUTENTICAÇÃO (NextAuth) + PROFISSIONAL
+// =====================================================
+
+// Usuário/profissional do sistema (dono do painel "Beleza em Dia").
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          String    @default("professional")
-  businessName  String?   @default("Meu Estúdio")
-  businessPhone String?
-  businessAddress String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  accounts      Account[]
-  sessions      Session[]
-  clients       Client[]
-  services      Service[]
-  appointments  Appointment[]
-  transactions  Transaction[]
+    id            String    @id @default(cuid())
+    name          String?
+    email         String    @unique
+    emailVerified DateTime?
+    password      String? // hash bcrypt (nulo para contas OAuth/Google)
+    image         String? // foto da empresa (upload próprio do profissional)
+    googleImage   String? // foto vinda da conta Google (OAuth)
+    role          String    @default("professional")
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
+
+    // Relações NextAuth
+    accounts Account[]
+    sessions Session[]
+
+    // Relações de negócio
+    clients        Client[]
+    services       Service[]
+    appointments   Appointment[]
+    transactions   Transaction[]
+    businessConfig BusinessConfig?
 }
 
+// Conta OAuth vinculada (padrão NextAuth). Guarda o provider (google, etc.).
 model Account {
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId            String
+    type              String
+    provider          String
+    providerAccountId String
+    refresh_token     String?
+    access_token      String?
+    expires_at        Int?
+    token_type        String?
+    scope             String?
+    id_token          String?
+    session_state     String?
+    createdAt         DateTime @default(now())
+    updatedAt         DateTime @updatedAt
+    user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@id([provider, providerAccountId])
+    @@id([provider, providerAccountId])
+    @@index([userId])
 }
 
+// Sessão persistida no banco (padrão NextAuth / PrismaAdapter).
 model Session {
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+    sessionToken String   @unique
+    userId       String
+    expires      DateTime
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
 }
 
+// Token de verificação de e-mail (padrão NextAuth).
 model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
+    identifier String
+    token      String
+    expires    DateTime
 
-  @@id([identifier, token])
+    @@id([identifier, token])
 }
 
+// =====================================================
+// DOMÍNIO DE NEGÓCIO
+// =====================================================
+
+// Cliente atendido pelo profissional.
 model Client {
-  id           String        @id @default(cuid())
-  name         String
-  phone        String?
-  notes        String?
-  visits       Int           @default(0)
-  avgTicket    Float         @default(0)
-  lastVisit    DateTime?
-  userId       String
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+    id             String        @id @default(cuid())
+    professionalId String
+    name           String
+    phone          String?
+    email          String?
+    notes          String?
+    createdAt      DateTime      @default(now())
+    professional   User          @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+    appointments   Appointment[]
 
-  @@index([userId])
+    @@index([professionalId])
 }
 
+// Serviço oferecido pelo profissional.
 model Service {
-  id           String        @id @default(cuid())
-  name         String
-  price        Float
-  duration     Int
-  active       Boolean       @default(true)
-  userId       String
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+    id             String        @id @default(cuid())
+    professionalId String
+    name           String
+    description    String?
+    duration       Int // duração em minutos
+    price          Float
+    active         Boolean       @default(true)
+    createdAt      DateTime      @default(now())
+    professional   User          @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+    appointments   Appointment[]
 
-  @@index([userId])
+    @@index([professionalId])
 }
 
+enum AppointmentStatus {
+    PENDING
+    CONFIRMED
+    CANCELLED
+    COMPLETED
+}
+
+// Agendamento de um cliente para um serviço.
 model Appointment {
-  id          String   @id @default(cuid())
-  date        String
-  time        String
-  status      String   @default("pendente")
-  paymentMode String?  @default("Sem sinal")
-  price       Float
-  duration    Int
-  clientId    String
-  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  serviceId   String
-  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+    id             String            @id @default(cuid())
+    professionalId String
+    clientId       String
+    serviceId      String
+    date           DateTime // dia do agendamento
+    startTime      String // horário de início "HH:MM"
+    endTime        String // horário de término "HH:MM"
+    status         AppointmentStatus @default(PENDING)
+    notes          String?
+    createdAt      DateTime          @default(now())
+    professional   User              @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+    client         Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+    service        Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+    transactions   Transaction[]
 
-  @@index([userId, date])
+    @@index([professionalId, date])
+    @@index([clientId])
+    @@index([serviceId])
 }
 
-model Transaction {
-  id          String   @id @default(cuid())
-  date        String
-  description String
-  value       Float
-  type        String
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+enum TransactionType {
+    INCOME
+    EXPENSE
+}
 
-  @@index([userId])
+// Pagamento / transação financeira do profissional.
+model Transaction {
+    id             String          @id @default(cuid())
+    professionalId String
+    agendamentoId  String? // opcional: transação ligada a um agendamento
+    type           TransactionType
+    category       String?
+    amount         Float
+    description    String?
+    date           DateTime
+    createdAt      DateTime        @default(now())
+    professional   User            @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+    agendamento    Appointment?    @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+
+    @@index([professionalId])
+    @@index([agendamentoId])
+}
+
+// Configurações do negócio (1 por profissional).
+model BusinessConfig {
+    id             String   @id @default(cuid())
+    professionalId String   @unique
+    businessName   String?
+    phone          String?
+    address        String?
+    pixKey         String?
+    workingHours   Json? // JSON com o expediente semanal
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+    professional   User     @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+}
+
+// Token de redefinição de senha (código de 6 dígitos enviado por e-mail).
+model PasswordResetToken {
+    id        String   @id @default(cuid())
+    email     String
+    token     String // código de 6 dígitos
+    expiresAt DateTime
+    used      Boolean  @default(false)
+    createdAt DateTime @default(now())
+
+    @@index([email])
 }
