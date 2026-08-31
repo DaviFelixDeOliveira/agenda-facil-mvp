@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useMockStore } from '@/context/mock-store'
+import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import {
@@ -28,7 +29,29 @@ import {
   LogOut,
   Trash2,
   ExternalLink,
+  Percent,
+  DollarSign,
+  Sun,
+  Moon,
+  Laptop,
 } from 'lucide-react'
+import { LogoutModal } from '@/components/logout-modal'
+
+function WhatsAppIcon({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0012.04 2zm0 18.15c-1.49 0-2.94-.4-4.22-1.15l-.3-.18-3.13.82.84-3.05-.2-.31a8.21 8.21 0 01-1.26-4.38c0-4.54 3.7-8.24 8.27-8.24 2.2 0 4.28.86 5.84 2.42a8.2 8.2 0 012.43 5.84c0 4.55-3.7 8.23-8.27 8.23zm4.53-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.78 2.71 4.3 3.8 2.53 1.09 2.53.73 2.98.69.46-.04 1.47-.6 1.68-1.18.2-.58.2-1.07.14-1.18-.06-.12-.22-.19-.47-.31z" />
+    </svg>
+  )
+}
+
+function InstagramIcon({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+    </svg>
+  )
+}
 
 type ConfigSection =
   | 'menu'
@@ -41,7 +64,10 @@ type ConfigSection =
   | 'seguranca'
 
 export default function ConfiguracoesPage() {
-  const { professional, schedule } = useMockStore()
+  const { professional, schedule, updateProfessional } = useMockStore()
+  const { theme, setTheme } = useTheme()
+  const [showLogout, setShowLogout] = useState(false)
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false)
   const [activeSection, setActiveSection] = useState<ConfigSection>('menu')
 
   // --- 1. Dados do Negócio ---
@@ -65,7 +91,9 @@ export default function ConfiguracoesPage() {
 
   // --- 3. Pagamento e Sinal Pix ---
   const [pixEnabled, setPixEnabled] = useState(professional.pixSinal)
+  const [pixTipo, setPixTipo] = useState<'fixo' | 'porcentagem'>(professional.pixSinalTipo || 'fixo')
   const [pixValue, setPixValue] = useState(professional.pixSinalValor)
+  const [pixPorcentagem, setPixPorcentagem] = useState(professional.pixSinalPorcentagem || 30)
   const [refundPolicy, setRefundPolicy] = useState('24h')
   const [acceptCards, setAcceptCards] = useState(true)
   const [acceptCash, setAcceptCash] = useState(true)
@@ -90,8 +118,6 @@ export default function ConfiguracoesPage() {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [themeMode, setThemeMode] = useState<'claro' | 'escuro'>('claro')
-  const [language, setLanguage] = useState('pt-BR')
 
   // --- Estados Gerais ---
   const [hasChanges, setHasChanges] = useState(false)
@@ -100,6 +126,22 @@ export default function ConfiguracoesPage() {
   const triggerChange = () => setHasChanges(true)
 
   const handleSave = (sectionName: string) => {
+    updateProfessional({
+      studioName,
+      name: profName,
+      phoneFormatted: phone,
+      email,
+      address,
+      cnpj,
+      bio,
+      specialty,
+      pixSinal: pixEnabled,
+      pixSinalTipo: pixTipo,
+      pixSinalValor: pixValue,
+      pixSinalPorcentagem: pixPorcentagem,
+      toleranciaAtraso: Number(delayTolerance) || 15,
+      cancelamentoSemPerda: Number(cancelPolicyHours) || 24,
+    })
     toast.success(`${sectionName} salvas com sucesso!`, {
       description: 'As alterações foram sincronizadas no painel.',
     })
@@ -730,26 +772,89 @@ export default function ConfiguracoesPage() {
 
           {pixEnabled && (
             <div className="space-y-4 animate-fade-in">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111827] mb-1.5">Valor do Sinal Antecipado (R$)</label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500">R$</span>
-                    <input
-                      type="number"
-                      value={pixValue}
-                      onChange={(e) => {
-                        setPixValue(Number(e.target.value))
-                        triggerChange()
-                      }}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-[#111827] focus:ring-2 focus:ring-brand outline-none"
-                    />
-                  </div>
-                  <p className="text-[11px] text-gray-400 mt-1">Valor médio recomendado na pesquisa: R$ 30,00</p>
+              {/* Escolha entre Valor Fixo ou Porcentagem */}
+              <div>
+                <label className="block text-xs font-semibold text-[#111827] mb-1.5">
+                  Como você prefere cobrar o sinal?
+                </label>
+                <div className="grid grid-cols-2 gap-3 max-w-md">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPixTipo('fixo')
+                      triggerChange()
+                    }}
+                    className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                      pixTipo === 'fixo'
+                        ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
+                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <DollarSign className="w-4 h-4" />
+                    Valor Fixo (R$)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPixTipo('porcentagem')
+                      triggerChange()
+                    }}
+                    className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                      pixTipo === 'porcentagem'
+                        ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
+                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Percent className="w-4 h-4" />
+                    Porcentagem (%)
+                  </button>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pixTipo === 'fixo' ? (
+                  <div>
+                    <label className="block text-xs font-semibold text-[#111827] mb-1.5">Valor do Sinal Fixo (R$)</label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500">R$</span>
+                      <input
+                        type="number"
+                        min="5"
+                        max="500"
+                        value={pixValue}
+                        onChange={(e) => {
+                          setPixValue(Number(e.target.value))
+                          triggerChange()
+                        }}
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-[#111827] focus:ring-2 focus:ring-brand outline-none"
+                      />
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1">Valor fixo cobrado em qualquer serviço agendado.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-semibold text-[#111827] mb-1.5">Porcentagem do Serviço (%)</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="10"
+                        max="100"
+                        value={pixPorcentagem}
+                        onChange={(e) => {
+                          setPixPorcentagem(Number(e.target.value))
+                          triggerChange()
+                        }}
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-[#111827] focus:ring-2 focus:ring-brand outline-none"
+                      />
+                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500">%</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1">Calculado automaticamente sobre o valor de cada serviço.</p>
+                  </div>
+                )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#111827] mb-1.5">Prazo de Cancelamento sem Perda do Sinal</label>
+                  <label className="block text-xs font-semibold text-[#111827] mb-1.5">Prazo de Cancelamento sem Perda</label>
                   <select
                     value={cancelPolicyHours}
                     onChange={(e) => {
@@ -762,6 +867,25 @@ export default function ConfiguracoesPage() {
                     <option value="24">Até 24 horas antes (Padrão recomendado)</option>
                     <option value="48">Até 48 horas antes</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Prévia de Simulação do Sinal */}
+              <div className="p-3.5 rounded-2xl bg-rose-50/40 border border-rose-100 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center shrink-0 text-xs font-bold">
+                  {pixTipo === 'porcentagem' ? `${pixPorcentagem}%` : `R$`}
+                </div>
+                <div className="text-xs text-gray-700">
+                  <span className="font-bold text-[#111827]">Exemplo Prático: </span>
+                  {pixTipo === 'porcentagem' ? (
+                    <>
+                      Para um serviço de <strong>R$ 100,00</strong>, a cliente pagará <strong>R$ {(100 * (pixPorcentagem / 100)).toFixed(2).replace('.', ',')}</strong> antecipado via Pix e o restante no local.
+                    </>
+                  ) : (
+                    <>
+                      A cliente pagará <strong>R$ {pixValue.toFixed(2).replace('.', ',')}</strong> antecipado via Pix para garantir o horário, independente do serviço.
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -1073,34 +1197,43 @@ export default function ConfiguracoesPage() {
                 href={`https://wa.me/?text=${encodeURIComponent(`Olá! Gostaria de agendar um horário? Confira meus serviços e horários disponíveis aqui: ${professional.publicUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-800 text-center hover:bg-emerald-100 transition-colors flex flex-col items-center justify-center gap-1"
+                className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-800 text-center hover:bg-emerald-100 transition-colors flex flex-col items-center justify-center gap-1.5 shadow-xs"
               >
-                <Phone className="w-4 h-4 text-emerald-600" />
+                <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-xs">
+                  <WhatsAppIcon className="w-4.5 h-4.5" />
+                </div>
                 <span className="text-xs font-bold">WhatsApp</span>
               </a>
 
               <button
                 onClick={handleCopy}
-                className="p-3.5 rounded-xl bg-pink-50 border border-pink-100 text-pink-800 text-center hover:bg-pink-100 transition-colors flex flex-col items-center justify-center gap-1"
+                className="p-3.5 rounded-2xl bg-pink-50/80 border border-pink-200 text-pink-800 text-center hover:bg-pink-100 transition-colors flex flex-col items-center justify-center gap-1.5 shadow-xs"
               >
-                <Instagram className="w-4 h-4 text-pink-600" />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shadow-xs">
+                  <InstagramIcon className="w-4.5 h-4.5" />
+                </div>
                 <span className="text-xs font-bold">Instagram Bio</span>
               </button>
 
               <a
                 href={`mailto:?subject=Agendamento no ${professional.studioName}&body=Acesse: ${professional.publicUrl}`}
-                className="p-3.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-800 text-center hover:bg-blue-100 transition-colors flex flex-col items-center justify-center gap-1"
+                className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200 text-blue-800 text-center hover:bg-blue-100 transition-colors flex flex-col items-center justify-center gap-1.5 shadow-xs"
               >
-                <Mail className="w-4 h-4 text-blue-600" />
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                  <Mail className="w-4.5 h-4.5" />
+                </div>
                 <span className="text-xs font-bold">E-mail</span>
               </a>
 
               <a
                 href={`/${professional.slug}`}
                 target="_blank"
-                className="p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 text-center hover:bg-gray-100 transition-colors flex flex-col items-center justify-center gap-1"
+                rel="noopener noreferrer"
+                className="p-3.5 rounded-2xl bg-gray-50/80 border border-gray-200 text-gray-800 text-center hover:bg-gray-100 transition-colors flex flex-col items-center justify-center gap-1.5 shadow-xs"
               >
-                <ExternalLink className="w-4 h-4 text-gray-600" />
+                <div className="w-8 h-8 rounded-full bg-[#111827] text-white flex items-center justify-center shadow-xs">
+                  <ExternalLink className="w-4 h-4" />
+                </div>
                 <span className="text-xs font-bold">Ver Vitrine</span>
               </a>
             </div>
@@ -1197,48 +1330,59 @@ export default function ConfiguracoesPage() {
             </div>
           </div>
 
-          {/* Preferências de Conta */}
+          {/* Preferências de Tema / Aparência */}
           <div className="space-y-3 pt-2 border-t border-gray-100">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Preferências do Sistema</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Idioma da Interface</label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white outline-none"
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Aparência do Painel</p>
+            <div>
+              <label className="block text-xs font-semibold text-[#111827] mb-2">Tema de Exibição</label>
+              <div className="grid grid-cols-3 gap-2.5 max-w-md">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme('light')
+                    toast.success('Tema Claro ativado!')
+                  }}
+                  className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${
+                    theme === 'light'
+                      ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
                 >
-                  <option value="pt-BR">Português (Brasil)</option>
-                  <option value="en-US">English (US)</option>
-                  <option value="es-ES">Español</option>
-                </select>
-              </div>
+                  <Sun className="w-4 h-4" />
+                  <span>Claro</span>
+                </button>
 
-              <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Modo de Exibição</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setThemeMode('claro')}
-                    className={`py-2 rounded-xl text-xs font-bold border transition-colors ${
-                      themeMode === 'claro' ? 'border-[#111827] bg-[#111827] text-white' : 'border-gray-200 bg-white text-gray-700'
-                    }`}
-                  >
-                    Claro
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setThemeMode('escuro')
-                      toast.info('Tema escuro simulado!')
-                    }}
-                    className={`py-2 rounded-xl text-xs font-bold border transition-colors ${
-                      themeMode === 'escuro' ? 'border-[#111827] bg-[#111827] text-white' : 'border-gray-200 bg-white text-gray-700'
-                    }`}
-                  >
-                    Escuro
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme('dark')
+                    toast.success('Tema Escuro ativado!')
+                  }}
+                  className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${
+                    theme === 'dark'
+                      ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Moon className="w-4 h-4" />
+                  <span>Escuro</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme('system')
+                    toast.info('Tema Padrão do Sistema selecionado!')
+                  }}
+                  className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${
+                    theme === 'system'
+                      ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Laptop className="w-4 h-4" />
+                  <span>Sistema</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1251,9 +1395,7 @@ export default function ConfiguracoesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <button
                 type="button"
-                onClick={() => {
-                  window.location.href = '/login'
-                }}
+                onClick={() => setShowLogout(true)}
                 className="py-3 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
@@ -1262,13 +1404,66 @@ export default function ConfiguracoesPage() {
 
               <button
                 type="button"
-                onClick={() => {
-                  toast.error('Exclusão de conta simulada no modo protótipo.')
-                }}
+                onClick={() => setShowDeleteAccount(true)}
                 className="py-3 px-4 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
               >
                 <Trash2 className="w-4 h-4" />
-                Excluir Conta Corporativa
+                Excluir Conta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Logout */}
+      <LogoutModal
+        isOpen={showLogout}
+        onClose={() => setShowLogout(false)}
+        onConfirm={() => {
+          window.location.href = '/boas-vindas'
+        }}
+      />
+
+      {/* Modal de Confirmação de Exclusão de Conta */}
+      {showDeleteAccount && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setShowDeleteAccount(false)}
+        >
+          <div
+            className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 border border-gray-100 text-center relative z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto shadow-xs">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-bold text-[#111827]">Excluir sua conta definitivamente?</h3>
+              <p className="text-xs text-gray-500 max-w-xs mx-auto leading-relaxed">
+                Esta ação é irreversível. Todos os seus agendamentos, clientes cadastrados e configurações serão excluídos.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteAccount(false)}
+                className="py-3 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  toast.success('Conta excluída com sucesso.')
+                  setTimeout(() => {
+                    window.location.href = '/boas-vindas'
+                  }, 500)
+                }}
+                className="py-3 px-4 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors shadow-sm"
+              >
+                Sim, Excluir
               </button>
             </div>
           </div>

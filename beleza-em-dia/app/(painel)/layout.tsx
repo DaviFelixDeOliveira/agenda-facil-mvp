@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/layout/sidebar'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { Header } from '@/components/layout/header'
+import { TourWalkthrough } from '@/components/tour-walkthrough'
 
 export default function PainelLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function PainelLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
       <BottomNav />
+      <TourWalkthrough />
     </div>
   )
 }

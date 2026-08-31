@@ -9,8 +9,8 @@ export default function ManutencaoPage() {
       <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6 text-center">
         {/* Logo / Imagem institucional */}
         <div className="flex flex-col items-center">
-          <div className="w-20 h-20 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center overflow-hidden shadow-sm mb-4">
-            <Image src="/logo.png" alt="Beleza em Dia" width={80} height={80} className="object-cover" />
+          <div className="relative w-44 h-44 flex items-center justify-center mb-4">
+            <Image src="/Logo Sem fundo texto preto.png" alt="Beleza em Dia" width={176} height={176} className="w-full h-full object-contain" priority />
           </div>
 
           <div className="w-14 h-14 rounded-2xl bg-gray-100 text-[#111827] flex items-center justify-center mb-3">

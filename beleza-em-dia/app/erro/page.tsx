@@ -21,8 +21,8 @@ export default function ErroPage() {
       <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6 text-center">
         {/* Logo */}
         <div className="flex flex-col items-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#111827] flex items-center justify-center overflow-hidden shadow-sm mb-4">
-            <Image src="/logo.png" alt="Beleza em Dia" width={48} height={48} className="object-cover" />
+          <div className="relative w-44 h-44 flex items-center justify-center mb-4">
+            <Image src="/Logo Sem fundo texto preto.png" alt="Beleza em Dia" width={176} height={176} className="w-full h-full object-contain" priority />
           </div>
 
           <div className="w-16 h-16 rounded-2xl bg-rose-50 text-brand flex items-center justify-center mb-3">

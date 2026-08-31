@@ -18,6 +18,8 @@ import {
   XCircle,
   Copy,
   X,
+  Sparkles,
+  Mail,
 } from 'lucide-react'
 import type { MockAppointment } from '@/lib/mock-data'
 
@@ -277,21 +279,36 @@ export default function DashboardPage() {
               </div>
 
               {/* Botões de compartilhamento */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`Agende online comigo pelo link: ${professional.publicUrl}`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`Olá! Gostaria de agendar um horário? Acesse meu link oficial: ${professional.publicUrl}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-100 transition-colors"
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 bg-emerald-50 text-emerald-800 rounded-2xl text-xs font-bold hover:bg-emerald-100 transition-colors border border-emerald-100"
                 >
-                  <MessageCircle className="w-4 h-4" />
+                  <div className="w-6 h-6 rounded-full bg-[#25D366] text-white flex items-center justify-center">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                  </div>
                   WhatsApp
                 </a>
-                <a
-                  href={`mailto:?subject=Agende comigo&body=${encodeURIComponent(`Olá! Agende online comigo pelo link: ${professional.publicUrl}`)}`}
-                  className="flex items-center justify-center gap-2 py-3 bg-blue-50 text-blue-700 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors"
+
+                <button
+                  onClick={handleCopy}
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 bg-pink-50 text-pink-800 rounded-2xl text-xs font-bold hover:bg-pink-100 transition-colors border border-pink-100"
                 >
-                  <Phone className="w-4 h-4" />
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </div>
+                  Instagram
+                </button>
+
+                <a
+                  href={`mailto:?subject=Agende comigo no ${professional.studioName}&body=${encodeURIComponent(`Olá! Agende online comigo pelo link: ${professional.publicUrl}`)}`}
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 bg-blue-50 text-blue-800 rounded-2xl text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-100"
+                >
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                    <Mail className="w-3.5 h-3.5" />
+                  </div>
                   E-mail
                 </a>
               </div>

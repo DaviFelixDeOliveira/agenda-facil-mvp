@@ -22,12 +22,12 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-6">
-      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-8">
+      <div className="w-full max-w-md sm:max-w-lg bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 space-y-6">
         {/* Logo Centralizada */}
         <div className="flex flex-col items-center text-center space-y-2">
-          <div className="w-20 h-20 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center overflow-hidden shadow-sm mb-1">
-            <Image src="/logo.png" alt="Beleza em Dia" width={80} height={80} className="object-cover" />
+          <div className="relative w-48 h-48 flex items-center justify-center mb-1">
+            <Image src="/Logo Sem fundo texto preto.png" alt="Beleza em Dia" width={192} height={192} className="w-full h-full object-contain" priority />
           </div>
           <h1 className="text-xl font-bold text-[#111827]">Crie sua conta profissional</h1>
           <p className="text-xs text-gray-500">Gerencie sua agenda com elegância e eficiência.</p>

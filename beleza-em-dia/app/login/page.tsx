@@ -22,12 +22,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-6">
-      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-8">
+      <div className="w-full max-w-md sm:max-w-lg bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 space-y-6">
         {/* Logo Grande Centralizada — Fiel ao Protótipo */}
         <div className="flex flex-col items-center text-center space-y-3">
-          <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-rose-50/50 border border-rose-100 flex items-center justify-center overflow-hidden shadow-md">
-            <Image src="/logo.png" alt="Beleza em Dia" width={128} height={128} className="object-cover" priority />
+          <div className="relative w-48 h-48 flex items-center justify-center">
+            <Image src="/Logo Sem fundo texto preto.png" alt="Beleza em Dia" width={192} height={192} className="w-full h-full object-contain" priority />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-[#111827]">Beleza em Dia</h1>

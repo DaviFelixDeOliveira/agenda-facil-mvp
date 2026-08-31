@@ -6,12 +6,12 @@ import { LayoutDashboard, CalendarDays, Users, Wallet, User, Settings } from 'lu
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { label: 'Painel', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Início', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Agenda', href: '/agenda', icon: CalendarDays },
   { label: 'Clientes', href: '/clientes', icon: Users },
   { label: 'Finanças', href: '/financeiro', icon: Wallet },
   { label: 'Perfil', href: '/perfil', icon: User },
-  { label: 'Config.', href: '/configuracoes', icon: Settings },
+  { label: 'Configurações', href: '/configuracoes', icon: Settings },
 ]
 
 export function BottomNav() {

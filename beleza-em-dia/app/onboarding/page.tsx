@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useTheme } from 'next-themes'
 import {
   Camera,
   Plus,
@@ -14,11 +15,15 @@ import {
   Calendar,
   Home,
   CheckCircle2,
+  Sun,
+  Moon,
+  Laptop,
 } from 'lucide-react'
 
 export default function OnboardingPage() {
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1)
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
 
   // Passo 1: Perfil
   const [studioName, setStudioName] = useState('Studio Bela Face')
@@ -44,6 +49,16 @@ export default function OnboardingPage() {
     { id: 3, name: 'Design de Sobrancelhas', price: '45,00', duration: '30', checked: false },
   ])
 
+  // Passo 4: Tema
+  const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'system'>(
+    (theme as 'light' | 'dark' | 'system') || 'light'
+  )
+
+  const handleSelectTheme = (mode: 'light' | 'dark' | 'system') => {
+    setSelectedTheme(mode)
+    setTheme(mode)
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-6">
       <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6">
@@ -56,18 +71,18 @@ export default function OnboardingPage() {
         </div>
 
         {/* Indicador de Passos */}
-        {step < 4 && (
+        {step < 5 && (
           <div className="space-y-2">
             <div className="flex justify-between items-center text-xs font-bold">
-              <span className="text-gray-400">PASSO {step} DE 3</span>
+              <span className="text-gray-400">PASSO {step} DE 4</span>
               <span className="text-brand uppercase tracking-wider">
-                {step === 1 ? 'PERFIL' : step === 2 ? 'AGENDA' : 'FINALIZANDO'}
+                {step === 1 ? 'PERFIL' : step === 2 ? 'AGENDA' : step === 3 ? 'SERVIÇOS' : 'APARÊNCIA'}
               </span>
             </div>
             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-brand rounded-full transition-all duration-300"
-                style={{ width: `${(step / 3) * 100}%` }}
+                style={{ width: `${(step / 4) * 100}%` }}
               />
             </div>
           </div>
@@ -370,9 +385,124 @@ export default function OnboardingPage() {
         )}
 
         {/* ========================================================
-            PASSO 4: CONTA CONFIGURADA COM SUCESSO (Tela 10 do PDF)
+            PASSO 4: ESCOLHA DA APARÊNCIA / TEMA DO SISTEMA
            ======================================================== */}
         {step === 4 && (
+          <div className="space-y-5 animate-fade-in">
+            <div>
+              <h1 className="text-xl font-bold text-[#111827]">Escolha a Aparência do Painel</h1>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Personalize como você prefere visualizar sua plataforma durante o dia a dia.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              {/* Opção Claro */}
+              <button
+                type="button"
+                onClick={() => handleSelectTheme('light')}
+                className={`p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                  selectedTheme === 'light'
+                    ? 'border-brand bg-rose-50/50 shadow-xs'
+                    : 'border-gray-200 bg-white hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    selectedTheme === 'light' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <Sun className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#111827]">Tema Claro</p>
+                    <p className="text-xs text-gray-500">Visual limpo, leve e iluminado.</p>
+                  </div>
+                </div>
+                {selectedTheme === 'light' && (
+                  <div className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center">
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                )}
+              </button>
+
+              {/* Opção Escuro */}
+              <button
+                type="button"
+                onClick={() => handleSelectTheme('dark')}
+                className={`p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                  selectedTheme === 'dark'
+                    ? 'border-brand bg-rose-50/50 shadow-xs'
+                    : 'border-gray-200 bg-white hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    selectedTheme === 'dark' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <Moon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#111827]">Tema Escuro</p>
+                    <p className="text-xs text-gray-500">Visual moderno e confortável para os olhos.</p>
+                  </div>
+                </div>
+                {selectedTheme === 'dark' && (
+                  <div className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center">
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                )}
+              </button>
+
+              {/* Opção Padrão do Sistema */}
+              <button
+                type="button"
+                onClick={() => handleSelectTheme('system')}
+                className={`p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                  selectedTheme === 'system'
+                    ? 'border-brand bg-rose-50/50 shadow-xs'
+                    : 'border-gray-200 bg-white hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    selectedTheme === 'system' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <Laptop className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#111827]">Padrão do Sistema</p>
+                    <p className="text-xs text-gray-500">Adapta-se automaticamente ao seu dispositivo.</p>
+                  </div>
+                </div>
+                {selectedTheme === 'system' && (
+                  <div className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center">
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <button
+                onClick={() => setStep(3)}
+                className="px-5 py-3 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50"
+              >
+                Voltar
+              </button>
+              <button
+                onClick={() => setStep(5)}
+                className="flex-1 py-3.5 bg-[#111827] text-white rounded-xl font-bold text-sm hover:bg-black transition-colors shadow-sm flex items-center justify-center gap-2"
+              >
+                Concluir Configuração <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            PASSO 5: CONTA CONFIGURADA COM SUCESSO (Tela 10 do PDF)
+           ======================================================== */}
+        {step === 5 && (
           <div className="text-center space-y-6 animate-fade-in py-4">
             <div className="w-20 h-20 rounded-3xl bg-brand text-white flex items-center justify-center mx-auto shadow-lg shadow-brand/20">
               <Check className="w-10 h-10" />
@@ -390,8 +520,8 @@ export default function OnboardingPage() {
                 <Calendar className="w-5 h-5 text-brand" />
               </div>
               <div>
-                <p className="text-sm font-bold text-[#111827]">Agenda Inteligente</p>
-                <p className="text-xs text-gray-500">Seu painel está otimizado para o dia a dia do salão.</p>
+                <p className="text-sm font-bold text-[#111827]">Painel Otimizado</p>
+                <p className="text-xs text-gray-500">Tudo pronto para alavancar seu negócio de beleza.</p>
               </div>
             </div>
 
@@ -399,7 +529,7 @@ export default function OnboardingPage() {
               onClick={() => router.push('/dashboard')}
               className="w-full py-4 bg-brand text-white rounded-2xl font-bold text-sm hover:bg-rose-700 transition-colors shadow-lg shadow-brand/20 flex items-center justify-center gap-2"
             >
-              Ir para o meu Dashboard <ArrowRight className="w-4 h-4" />
+              Ir para o Início <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}

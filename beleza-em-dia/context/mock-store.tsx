@@ -36,6 +36,7 @@ interface MockStoreState {
   logout: () => void
   updateAppointmentStatus: (id: string, status: AppointmentStatus) => void
   updateClientNotes: (id: string, notes: string) => void
+  updateProfessional: (data: Partial<typeof mockProfessional>) => void
 }
 
 const MockStoreContext = createContext<MockStoreState | null>(null)
@@ -43,6 +44,7 @@ const MockStoreContext = createContext<MockStoreState | null>(null)
 // ---------- Provider ----------
 export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(true) // Começa logada para protótipo
+  const [professional, setProfessional] = useState(mockProfessional)
   const [appointments, setAppointments] = useState<MockAppointment[]>([])
   const [clients] = useState<MockClient[]>(mockClients)
   const [services] = useState<MockService[]>(mockServices)
@@ -81,9 +83,13 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     // Em um protótipo, podemos simular sem persistir clientes
   }, [])
 
+  const updateProfessional = useCallback((data: Partial<typeof mockProfessional>) => {
+    setProfessional(prev => ({ ...prev, ...data }))
+  }, [])
+
   const value: MockStoreState = {
     isLoggedIn,
-    professional: mockProfessional,
+    professional,
     appointments,
     clients,
     services,
@@ -95,6 +101,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     logout,
     updateAppointmentStatus,
     updateClientNotes,
+    updateProfessional,
   }
 
   return (

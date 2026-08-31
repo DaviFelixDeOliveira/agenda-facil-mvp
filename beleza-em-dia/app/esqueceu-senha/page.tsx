@@ -46,12 +46,12 @@ export default function EsqueceuSenhaPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-6">
-      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-8">
+      <div className="w-full max-w-md sm:max-w-lg bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 space-y-6 text-center">
         {/* Logo / Avatar */}
         <div className="flex flex-col items-center">
-          <div className="w-20 h-20 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center overflow-hidden shadow-sm mb-3">
-            <Image src="/logo.png" alt="Beleza em Dia" width={80} height={80} className="object-cover" />
+          <div className="relative w-44 h-44 flex items-center justify-center mb-3">
+            <Image src="/Logo Sem fundo texto preto.png" alt="Beleza em Dia" width={176} height={176} className="w-full h-full object-contain" priority />
           </div>
           <h1 className="text-xl font-bold text-brand">Verifique seu e-mail</h1>
           <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
