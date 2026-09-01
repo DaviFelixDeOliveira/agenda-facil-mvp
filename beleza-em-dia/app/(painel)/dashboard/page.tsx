@@ -20,14 +20,17 @@ import {
   X,
   Sparkles,
   Mail,
+  Plus,
 } from 'lucide-react'
 import type { MockAppointment } from '@/lib/mock-data'
+import { useModalManager } from '@/context/modal-manager'
+import { NovoAgendamentoModal } from '@/components/modals/novo-agendamento-modal'
 
 export default function DashboardPage() {
   const { professional, appointments, updateAppointmentStatus } = useMockStore()
-  const [selectedAppt, setSelectedAppt] = useState<MockAppointment | null>(null)
-  const [shareOpen, setShareOpen] = useState(false)
+  const { open, close, isOpen, getData } = useModalManager()
   const [copied, setCopied] = useState(false)
+  const [lastApptId, setLastApptId] = useState<string | null>(null)
 
   const today = new Date().toISOString().split('T')[0]
   const todayAppts = appointments.filter(a => a.date === today)
@@ -46,6 +49,11 @@ export default function DashboardPage() {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+
+  const openShareModal = () => open('share')
+  const openAppointmentModal = (appt: MockAppointment) => open('appointment', appt)
+
+  const selectedAppt = getData<MockAppointment>('appointment')
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-5xl mx-auto">
@@ -77,11 +85,18 @@ export default function DashboardPage() {
           </div>
 
           <button
-            onClick={() => setShareOpen(true)}
+            onClick={openShareModal}
             className="mt-5 w-full flex items-center justify-center gap-2 bg-brand hover:bg-rose-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors"
           >
             <Share2 className="w-4 h-4" />
             Compartilhar Link da Agenda
+          </button>
+          <button
+            onClick={() => open('novo-agendamento')}
+            className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold text-sm transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Agendamento Manual
           </button>
         </div>
       </div>
@@ -113,7 +128,7 @@ export default function DashboardPage() {
             upcomingAppts.map((a) => (
               <button
                 key={a.id}
-                onClick={() => setSelectedAppt(a)}
+                onClick={() => openAppointmentModal(a)}
                 className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-gray-50/80 transition-colors text-left"
               >
                 <div className="flex items-center gap-3">
@@ -137,16 +152,16 @@ export default function DashboardPage() {
       </div>
 
       {/* ===== Modal de Detalhes do Agendamento (Tela 12 do PDF) ===== */}
-      {selectedAppt && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end lg:items-center justify-center" onClick={() => setSelectedAppt(null)}>
+      {isOpen('appointment') && selectedAppt && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end lg:items-center justify-center p-4" onClick={() => close('appointment')}>
           <div
-            className="bg-white w-full max-w-lg rounded-t-2xl lg:rounded-2xl max-h-[90vh] overflow-y-auto animate-fade-in"
+            className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl lg:rounded-2xl animate-fade-in"
             onClick={e => e.stopPropagation()}
           >
             {/* Header do modal */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h3 className="font-bold text-[#111827] text-lg">Detalhes do Agendamento</h3>
-              <button onClick={() => setSelectedAppt(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Fechar">
+              <button onClick={() => close('appointment')} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Fechar">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
@@ -170,7 +185,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-semibold text-[#111827]">{selectedAppt.clientName}</p>
                   <p className="text-xs text-gray-500">
-                    {selectedAppt.clientPhone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
+                    {selectedAppt.clientPhone.replace(/(\d{2})(\d{5})(\d{4})/g, '($1) $2-$3')}
                   </p>
                 </div>
               </div>
@@ -211,7 +226,7 @@ export default function DashboardPage() {
               <div className="flex gap-3">
                 {selectedAppt.status !== 'finalizado' && selectedAppt.status !== 'cancelado' && (
                   <button
-                    onClick={() => { updateAppointmentStatus(selectedAppt.id, 'finalizado'); setSelectedAppt(null) }}
+                    onClick={() => { updateAppointmentStatus(selectedAppt.id, 'finalizado'); close('appointment') }}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl font-medium text-sm hover:bg-emerald-100 transition-colors"
                   >
                     <CheckCircle2 className="w-4 h-4" />
@@ -228,7 +243,7 @@ export default function DashboardPage() {
 
               {selectedAppt.status !== 'finalizado' && selectedAppt.status !== 'cancelado' && (
                 <button
-                  onClick={() => { updateAppointmentStatus(selectedAppt.id, 'cancelado'); setSelectedAppt(null) }}
+                  onClick={() => { updateAppointmentStatus(selectedAppt.id, 'cancelado'); close('appointment') }}
                   className="w-full text-center text-sm text-red-500 hover:text-red-700 font-medium py-2 transition-colors"
                 >
                   <XCircle className="w-4 h-4 inline mr-1" />
@@ -241,15 +256,15 @@ export default function DashboardPage() {
       )}
 
       {/* ===== Modal de Compartilhamento (Tela 11 do PDF) ===== */}
-      {shareOpen && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end lg:items-center justify-center" onClick={() => setShareOpen(false)}>
+      {isOpen('share') && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end lg:items-center justify-center p-4" onClick={() => close('share')}>
           <div
-            className="bg-white w-full max-w-md rounded-t-2xl lg:rounded-2xl animate-fade-in"
+            className="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl lg:rounded-2xl animate-fade-in"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h3 className="font-bold text-[#111827] text-lg">Compartilhar Agenda</h3>
-              <button onClick={() => setShareOpen(false)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Fechar">
+              <button onClick={() => close('share')} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Fechar">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
@@ -316,6 +331,41 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Novo Agendamento Manual */}
+{isOpen('novo-agendamento') && (
+        <NovoAgendamentoModal
+          apptId={lastApptId}
+          onClose={() => close('novo-agendamento')}
+          onSave={({ clientId, serviceId, date, time, signalPrice }) => {
+            const client = clients?.find((c: any) => c.id === clientId)
+            const service = services?.find((s: any) => s.id === serviceId)
+            const newAppt = {
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              clientId,
+              clientName: client?.name || '',
+              clientPhone: client?.phoneFormatted || '',
+              serviceId,
+              serviceName: service?.name || '',
+              price: service?.price || 0,
+              duration: service?.duration || 30,
+              date,
+              time,
+              status: Number(signalPrice) > 0 ? 'pendente' : 'confirmado',
+              signalPaid: Number(signalPrice) > 0,
+              signalAmount: Number(signalPrice) || 0,
+              notes: '',
+            }
+            setAppointments(prev => [...prev, newAppt])
+            localStorage.setItem('beleza-em-dia-appointments', JSON.stringify([...appointments, newAppt]))
+            setLastApptId(newAppt.id)
+            toast.success('Agendamento criado!')
+          }}
+          services={services}
+          clients={clients}
+        />
+      )}
+
     </div>
   )
 }

@@ -38,20 +38,55 @@
     --chart-4: 220 14% 10%;
     --chart-5: 0 72% 51%;
   }
+
+  .dark {
+    --background: 220 14% 6%;
+    --foreground: 0 0% 98%;
+    --card: 220 14% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 220 14% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 220 14% 6%;
+    --secondary: 220 14% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 220 14% 12%;
+    --muted-foreground: 220 9% 65%;
+    --accent: 220 14% 12%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 14% 18%;
+    --input: 220 14% 18%;
+    --ring: 347 77% 50%;
+    --color-brand: #E11D48;
+    --color-primary: #FAFAFA;
+    --color-background: #0F1014;
+    --color-surface: #1A1C23;
+    --color-success: #10B981;
+    --color-warning: #F59E0B;
+    --color-danger: #DC2626;
+    --color-loading: #E11D48;
+    --chart-1: 347 77% 50%;
+    --chart-2: 160 59% 40%;
+    --chart-3: 35 91% 60%;
+    --chart-4: 220 14% 10%;
+    --chart-5: 0 72% 51%;
+  }
 }
 
 @layer base {
   html { scroll-behavior: smooth; }
   * { border-color: hsl(var(--border)); }
   body {
-    background-color: #FAFAFA;
-    color: #111827;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
   ::selection {
     background-color: rgba(225, 29, 72, 0.15);
-    color: #111827;
+    color: hsl(var(--foreground));
   }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background-color: transparent; }

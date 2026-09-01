@@ -1,6 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+
+type TimeBlock = {
+  start: string
+  end: string
+}
+
+type DayConfig = {
+  name: string
+  active: boolean
+  blocks: TimeBlock[]
+}
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -32,14 +43,15 @@ export default function OnboardingPage() {
   const [domicilio, setDomicilio] = useState(false)
 
   // Passo 2: Agenda
-  const [days, setDays] = useState([
-    { name: 'Segunda-feira', active: true, start: '09:00', end: '18:00', hasBreak: false },
-    { name: 'Terça-feira', active: true, start: '09:00', end: '18:00', hasBreak: false },
-    { name: 'Quarta-feira', active: true, start: '09:00', end: '18:00', hasBreak: false },
-    { name: 'Quinta-feira', active: true, start: '09:00', end: '18:00', hasBreak: false },
-    { name: 'Sexta-feira', active: true, start: '09:00', end: '18:00', hasBreak: false },
-    { name: 'Sábado', active: false, start: '09:00', end: '14:00', hasBreak: false },
-    { name: 'Domingo', active: false, start: '', end: '', hasBreak: false },
+  const [agendaType, setAgendaType] = useState<'fixa' | 'flexivel' | null>(null)
+  const [days, setDays] = useState<DayConfig[]>([
+    { name: 'Segunda-feira', active: true, blocks: [{ start: '09:00', end: '18:00' }] },
+    { name: 'Terça-feira', active: true, blocks: [{ start: '09:00', end: '18:00' }] },
+    { name: 'Quarta-feira', active: true, blocks: [{ start: '09:00', end: '18:00' }] },
+    { name: 'Quinta-feira', active: true, blocks: [{ start: '09:00', end: '18:00' }] },
+    { name: 'Sexta-feira', active: true, blocks: [{ start: '09:00', end: '18:00' }] },
+    { name: 'Sábado', active: false, blocks: [{ start: '09:00', end: '14:00' }] },
+    { name: 'Domingo', active: false, blocks: [] },
   ])
 
   // Passo 3: Serviços
@@ -196,6 +208,43 @@ export default function OnboardingPage() {
               <p className="text-xs text-gray-500 mt-0.5">Configure os dias e horários que você estará disponível para atendimentos.</p>
             </div>
 
+            {/* Seletor de Tipo de Agenda */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setAgendaType(prev => prev === 'fixa' ? null : 'fixa')}
+                className={`p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-between ${
+                  agendaType === 'fixa' ? 'border-brand bg-gray-50 text-brand' : 'border-gray-200 bg-white text-gray-600'
+                }`}
+              >
+                <span>Agenda Fixa</span>
+                {agendaType === 'fixa' && (
+                  <div className="w-3 h-3 rounded-full bg-brand text-white flex items-center justify-center">
+                    <Check className="w-2 h-2" />
+                  </div>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAgendaType(prev => prev === 'flexivel' ? null : 'flexivel')}
+                className={`p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-between ${
+                  agendaType === 'flexivel' ? 'border-brand bg-gray-50 text-brand' : 'border-gray-200 bg-white text-gray-600'
+                }`}
+              >
+                <span>Agenda Flexível</span>
+                {agendaType === 'flexivel' && (
+                  <div className="w-3 h-3 rounded-full bg-brand text-white flex items-center justify-center">
+                    <Check className="w-2 h-2" />
+                  </div>
+                )}
+              </button>
+            </div>
+
+            {/* NOTE: Seleção não é obrigatória - pode tirar a seleção a qualquer momento */}
+            <p className="text-xs text-gray-500 mt-1 italic">
+              Dica: Seleção não é obrigatória. Pode configurar depois ou manter sem tipo definido. Clique no ícone novamente para remover a seleção.
+            </p>
+
             <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
               {days.map((day, idx) => (
                 <div key={day.name} className="p-4 rounded-2xl border border-gray-100 bg-white shadow-sm space-y-3">
@@ -220,58 +269,124 @@ export default function OnboardingPage() {
                     </button>
                   </div>
 
-                  {day.active && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Início</label>
-                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
-                            <input
-                              type="time"
-                              defaultValue={day.start}
-                              className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
-                            />
-                            <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                          </div>
+                  {day.active ? (
+                    <div className="space-y-3">
+                      {agendaType === 'flexivel' ? (
+                        <div className="space-y-2">
+                          {day.blocks.map((block, bdx) => (
+                            <div key={bdx} className="flex items-center gap-2">
+                              <div className="flex-1">
+                                <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Início</label>
+                                <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
+                                  <input
+                                    type="time"
+                                    value={block.start}
+                                    onChange={(e) => {
+                                      const updated = [...days]
+                                      updated[idx].blocks[bdx].start = e.target.value
+                                      setDays(updated)
+                                    }}
+                                    className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
+                                  />
+                                  <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                </div>
+                              </div>
+
+                              <div className="flex-1">
+                                <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Fim</label>
+                                <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
+                                  <input
+                                    type="time"
+                                    value={block.end}
+                                    onChange={(e) => {
+                                      const updated = [...days]
+                                      updated[idx].blocks[bdx].end = e.target.value
+                                      setDays(updated)
+                                    }}
+                                    className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
+                                  />
+                                  <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...days]
+                                  updated[idx].blocks.splice(bdx, 1)
+                                  setDays(updated)
+                                }}
+                                className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...days]
+                              updated[idx].blocks.push({ start: '14:00', end: '18:00' })
+                              setDays(updated)
+                            }}
+                            className="text-xs text-brand font-semibold hover:underline inline-flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" /> Bloco
+                          </button>
                         </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                              <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Início</label>
+                              <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
+                                <input
+                                  type="time"
+                                  value={day.blocks[0]?.start || '09:00'}
+                                  onChange={(e) => {
+                                    const updated = [...days]
+                                    updated[idx].blocks[0].start = e.target.value
+                                    setDays(updated)
+                                  }}
+                                  className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
+                                />
+                                <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              </div>
+                            </div>
 
-                        <div className="flex-1">
-                          <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Fim</label>
-                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
-                            <input
-                              type="time"
-                              defaultValue={day.end}
-                              className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
-                            />
-                            <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                            <div className="flex-1">
+                              <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Fim</label>
+                              <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
+                                <input
+                                  type="time"
+                                  value={day.blocks[0]?.end || '18:00'}
+                                  onChange={(e) => {
+                                    const updated = [...days]
+                                    updated[idx].blocks[0].end = e.target.value
+                                    setDays(updated)
+                                  }}
+                                  className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
+                                />
+                                <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              </div>
+                            </div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...days]
+                              updated[idx].blocks = []
+                              setDays(updated)
+                            }}
+                            className="p-2 mt-5 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = [...days]
-                            updated[idx].active = false
-                            setDays(updated)
-                          }}
-                          className="p-2 mt-5 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = [...days]
-                          updated[idx].hasBreak = !updated[idx].hasBreak
-                          setDays(updated)
-                        }}
-                        className="text-xs text-brand font-semibold hover:underline inline-flex items-center gap-1"
-                      >
-                        <Plus className="w-3 h-3" /> Adicionar intervalo
-                      </button>
+                      )}
                     </div>
+                  ) : (
+                    <span className="text-xs font-semibold text-gray-400 italic">Fechado / Folga</span>
                   )}
                 </div>
               ))}
@@ -287,6 +402,7 @@ export default function OnboardingPage() {
               <button
                 onClick={() => setStep(3)}
                 className="flex-1 py-3.5 bg-brand text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-colors shadow-sm flex items-center justify-center gap-2"
+                disabled={!days.some(d => d.active)}
               >
                 Próximo Passo <ArrowRight className="w-4 h-4" />
               </button>

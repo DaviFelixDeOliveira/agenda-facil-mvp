@@ -23,7 +23,6 @@ export default function ResetPasswordRequestPage() {
     setLoading(true)
 
     try {
-      // Chamada à API de reset (mock/real)
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -38,10 +37,8 @@ export default function ResetPasswordRequestPage() {
         return
       }
 
-      // Sucesso: mostrar toast e ir para página de verificação
       toast.success('Código enviado! Verifique seu e-mail.')
       
-      // Salvar email em sessão (ou localStorage) para usar na próxima página
       sessionStorage.setItem('resetEmail', email)
       
       router.push('/esqueceu-senha/verify')
@@ -55,7 +52,6 @@ export default function ResetPasswordRequestPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-8">
       <div className="w-full max-w-md sm:max-w-lg bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 space-y-6">
-        {/* Logo e Título */}
         <div className="flex flex-col items-center text-center space-y-3">
           <div className="relative w-44 h-44 flex items-center justify-center">
             <Image 
@@ -73,7 +69,6 @@ export default function ResetPasswordRequestPage() {
           </div>
         </div>
 
-        {/* Formulário */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
@@ -108,7 +103,6 @@ export default function ResetPasswordRequestPage() {
           </button>
         </form>
 
-        {/* Link voltar */}
         <div className="text-center">
           <Link
             href="/login"

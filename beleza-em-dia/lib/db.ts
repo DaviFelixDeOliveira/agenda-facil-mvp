@@ -4,20 +4,16 @@ const globalForPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClient
 }
 
-export const prisma: PrismaClient | null =
+export const prisma =
   globalForPrisma.prisma ??
-  (() => {
-    try {
-      const client = new PrismaClient()
-      if (process.env.NODE_ENV !== 'production') {
-        globalForPrisma.prisma = client
-      }
-      return client
-    } catch {
-      return null
-    }
-  })()
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  })
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma
+}
 
 export function isDatabaseReady() {
-  return Boolean(prisma && process.env.DATABASE_URL)
+  return Boolean(process.env.DATABASE_URL)
 }

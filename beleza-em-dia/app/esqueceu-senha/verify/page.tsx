@@ -7,6 +7,14 @@ import Image from 'next/image'
 import { toast } from 'sonner'
 import { ArrowLeft } from 'lucide-react'
 
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@')
+  if (local.length <= 3) return email
+  const firstThree = local.slice(0, 3)
+  const lastChar = local.slice(-1)
+  return `${firstThree}****${lastChar}@${domain}`
+}
+
 export default function VerifyResetCodePage() {
   const [code, setCode] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
@@ -118,7 +126,7 @@ export default function VerifyResetCodePage() {
           </div>
           <h1 className="text-xl font-bold text-brand">Verifique seu e-mail</h1>
           <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
-            Enviamos um código de 6 dígitos para <strong>{email}</strong>. Insira-o abaixo para continuar.
+            Enviamos um código de 6 dígitos para <strong>{maskEmail(email)}</strong>. Insira-o abaixo para continuar.
           </p>
         </div>
 

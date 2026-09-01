@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useMockStore } from '@/context/mock-store'
 import Image from 'next/image'
 import {
@@ -17,11 +16,12 @@ import {
   X,
 } from 'lucide-react'
 import { initials } from '@/lib/utils'
+import { useModalManager } from '@/context/modal-manager'
 
 export default function PerfilPage() {
   const { professional, services, portfolio, schedule, updateProfessional } = useMockStore()
+  const { open, close, isOpen } = useModalManager()
   const [copied, setCopied] = useState(false)
-  const [isEditOpen, setIsEditOpen] = useState(false)
   const maxFiles = 20
 
   // Form states
@@ -43,7 +43,7 @@ export default function PerfilPage() {
     setFormAddress(professional.address)
     setFormBio(professional.bio)
     setFormPhone(professional.phoneFormatted)
-    setIsEditOpen(true)
+    open('edit-profile')
   }
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -55,7 +55,7 @@ export default function PerfilPage() {
       bio: formBio,
       phoneFormatted: formPhone,
     })
-    setIsEditOpen(false)
+    close('edit-profile')
   }
 
   const activeServices = services.filter(s => s.active)
@@ -211,11 +211,8 @@ export default function PerfilPage() {
       </div>
 
       {/* Modal de Edição de Perfil */}
-      {isEditOpen && typeof document !== 'undefined' && createPortal(
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => setIsEditOpen(false)}
-        >
+      {isOpen('edit-profile') && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => close('edit-profile')}>
           <div
             className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 border border-gray-100 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
@@ -226,7 +223,7 @@ export default function PerfilPage() {
                 <p className="text-xs text-gray-500">Atualize as informações públicas vistas pelos clientes.</p>
               </div>
               <button
-                onClick={() => setIsEditOpen(false)}
+                onClick={() => close('edit-profile')}
                 className="p-2 rounded-xl hover:bg-gray-100 text-gray-400"
               >
                 <X className="w-5 h-5" />
@@ -304,7 +301,7 @@ export default function PerfilPage() {
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setIsEditOpen(false)}
+                  onClick={() => close('edit-profile')}
                   className="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50"
                 >
                   Cancelar

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { Bell } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 import {
   NotificationsModal,
   initialNotifications,
@@ -40,16 +41,19 @@ export function Header() {
           </div>
           <span className="font-bold text-[#111827] text-sm">Beleza em Dia</span>
         </div>
-        <button
-          onClick={() => setShowNotif(true)}
-          className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
-          aria-label="Notificações"
-        >
-          <Bell className="w-5 h-5 text-gray-600" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand rounded-full ring-2 ring-white" />
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => setShowNotif(true)}
+            className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
+            aria-label="Notificações"
+          >
+            <Bell className="w-5 h-5 text-gray-600" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand rounded-full ring-2 ring-white" />
+            )}
+          </button>
+        </div>
       </header>
 
       <NotificationsModal
