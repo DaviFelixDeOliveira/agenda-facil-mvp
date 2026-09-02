@@ -363,6 +363,7 @@ export interface MockTransaction {
   id: string
   date: string
   clientName: string
+  clientPhone?: string
   serviceName: string
   amount: number
   method: 'PIX' | 'CRÉDITO' | 'DÉBITO' | 'DINHEIRO'

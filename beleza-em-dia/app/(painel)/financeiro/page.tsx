@@ -7,12 +7,12 @@ import {
   DollarSign,
   TrendingUp,
   ArrowUpRight,
-  Download,
   CreditCard,
   Banknote,
   Smartphone,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { TransactionDetailModal } from '@/components/modals/transaction-detail-modal'
 
 type FilterTab = 'today' | 'week' | 'month'
 
@@ -33,6 +33,7 @@ const methodColors: Record<string, string> = {
 export default function FinanceiroPage() {
   const { financial, transactions } = useMockStore()
   const [activeTab, setActiveTab] = useState<FilterTab>('month')
+  const [selectedTransaction, setSelectedTransaction] = useState<typeof transactions[number] | null>(null)
 
   const displayValue = activeTab === 'today' ? financial.today
     : activeTab === 'week' ? financial.week
@@ -48,13 +49,6 @@ export default function FinanceiroPage() {
           <h1 className="text-2xl font-bold text-[#111827] dark:text-white">Financeiro</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">Acompanhe seu faturamento e transações</p>
         </div>
-        <button
-          onClick={() => toast.success('Relatório gerado e enviado para download!')}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-medium text-[#111827] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm"
-        >
-          <Download className="w-4 h-4" />
-          <span className="hidden sm:inline">Exportar</span>
-        </button>
       </div>
 
       {/* Card Faturamento Principal */}
@@ -144,7 +138,7 @@ export default function FinanceiroPage() {
         </div>
         <div className="divide-y divide-gray-50 dark:divide-gray-800">
           {transactions.map(tx => (
-            <div key={tx.id} className="px-5 py-3.5 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
+            <button type="button" key={tx.id} onClick={() => setSelectedTransaction(tx)} className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors text-left">
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${methodColors[tx.method] || 'bg-gray-50 text-gray-600'}`}>
                   {methodIcons[tx.method] || <DollarSign className="w-4 h-4" />}
@@ -160,10 +154,11 @@ export default function FinanceiroPage() {
                   {tx.method}
                 </span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
+      <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} />
     </div>
   )
 }

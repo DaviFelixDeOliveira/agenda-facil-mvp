@@ -192,6 +192,12 @@ export default function ConfiguracoesPage() {
 
   const triggerChange = () => setHasChanges(true)
 
+  const requestLeave = () => {
+    if (hasChanges && !window.confirm('Existem alterações não salvas. Deseja sair mesmo assim?')) return false
+    setHasChanges(false)
+    return true
+  }
+
   const handleSave = (sectionName: string) => {
     updateProfessional({
       studioName,
@@ -219,7 +225,7 @@ export default function ConfiguracoesPage() {
     setShowServiceModal(true)
   }
 
-  const saveService = (data: Pick<MockService, 'name' | 'category' | 'price' | 'duration' | 'active'>) => {
+  const saveService = (data: Pick<MockService, 'name' | 'category' | 'price' | 'duration' | 'active' | 'description'>) => {
     if (editingService) {
       updateService(editingService.id, data)
     } else {
@@ -239,6 +245,7 @@ export default function ConfiguracoesPage() {
 
   // --- Navegação com Suporte a Voltar (Mobile Gesture / Web History) ---
   const navigateToSection = (section: ConfigSection) => {
+    if (!requestLeave()) return
     if (section !== 'menu') {
       window.history.pushState({ configSection: section }, '', `#${section}`)
     }
@@ -253,6 +260,10 @@ export default function ConfiguracoesPage() {
     }
 
     const handlePopState = (e: PopStateEvent) => {
+      if (hasChanges && !window.confirm('Existem alterações não salvas. Deseja sair mesmo assim?')) {
+        window.history.go(1)
+        return
+      }
       if (e.state?.configSection) {
         setActiveSection(e.state.configSection)
       } else {
@@ -262,10 +273,17 @@ export default function ConfiguracoesPage() {
     }
 
     window.addEventListener('popstate', handlePopState)
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasChanges) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
     return () => {
       window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
     }
-  }, [])
+  }, [hasChanges])
 
   // --- Navegação Mobile / Desktop ---
   const menuItems = [
@@ -282,6 +300,7 @@ export default function ConfiguracoesPage() {
     <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800 mb-5">
       <button
         onClick={() => {
+          if (!requestLeave()) return
           if (window.history.state?.configSection) {
             window.history.back()
           } else {
