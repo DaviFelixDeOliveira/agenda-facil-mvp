@@ -6,7 +6,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
 import { ArrowLeft, Mail } from 'lucide-react'
-
 export default function ResetPasswordRequestPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -38,9 +37,7 @@ export default function ResetPasswordRequestPage() {
       }
 
       toast.success('Código enviado! Verifique seu e-mail.')
-      
       sessionStorage.setItem('resetEmail', email)
-      
       router.push('/esqueceu-senha/verify')
     } catch (error) {
       console.error('Reset error:', error)
@@ -50,8 +47,8 @@ export default function ResetPasswordRequestPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-8">
-      <div className="w-full max-w-md sm:max-w-lg bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#090D16] p-4 sm:p-8 transition-colors">
+      <div className="w-full max-w-md sm:max-w-lg bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 dark:border-gray-800 space-y-6 transition-colors">
         <div className="flex flex-col items-center text-center space-y-3">
           <div className="relative w-44 h-44 flex items-center justify-center">
             <Image 
@@ -59,19 +56,27 @@ export default function ResetPasswordRequestPage() {
               alt="Beleza em Dia" 
               width={176} 
               height={176} 
-              className="w-full h-full object-contain" 
+              className="w-full h-full object-contain dark:hidden" 
+              priority 
+            />
+            <Image 
+              src="/Logo Sem fundo texto branco.png" 
+              alt="Beleza em Dia" 
+              width={176} 
+              height={176} 
+              className="w-full h-full object-contain hidden dark:block" 
               priority 
             />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#111827]">Redefinir Senha</h1>
-            <p className="text-sm text-gray-500 mt-1">Digite o e-mail da sua conta profissional</p>
+            <h1 className="text-2xl font-bold text-[#111827] dark:text-white">Redefinir Senha</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Digite o e-mail da sua conta profissional</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
               E-mail
             </label>
             <div className="relative">
@@ -80,7 +85,7 @@ export default function ResetPasswordRequestPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-3.5 rounded-2xl border border-gray-200 bg-white text-sm text-[#111827] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+                className="w-full pl-10 pr-3.5 py-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none transition-all"
                 placeholder="seu@email.com"
                 required
               />
@@ -90,7 +95,7 @@ export default function ResetPasswordRequestPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-[#111827] text-white rounded-2xl font-bold text-sm hover:bg-black transition-all disabled:opacity-50"
+            className="w-full py-3.5 bg-[#111827] dark:bg-brand text-white rounded-2xl font-bold text-sm hover:bg-black dark:hover:bg-rose-700 transition-all disabled:opacity-50 shadow-sm"
           >
             {loading ? (
               <>
@@ -103,10 +108,10 @@ export default function ResetPasswordRequestPage() {
           </button>
         </form>
 
-        <div className="text-center">
+        <div className="pt-2">
           <Link
             href="/login"
-            className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#111827] font-semibold transition-colors"
+            className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400 hover:text-[#111827] dark:hover:text-white font-medium transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Voltar para o login

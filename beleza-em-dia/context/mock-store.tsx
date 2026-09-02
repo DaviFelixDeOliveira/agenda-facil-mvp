@@ -30,13 +30,14 @@ interface MockStoreState {
   transactions: MockTransaction[]
   financial: typeof mockFinancial
   schedule: WeekdaySchedule[]
-  portfolio: typeof mockPortfolio
+  portfolio: Array<{ id: string; src: string; alt: string }>
   // Ações
   login: () => void
   logout: () => void
   updateAppointmentStatus: (id: string, status: AppointmentStatus) => void
   updateClientNotes: (id: string, notes: string) => void
   updateProfessional: (data: Partial<typeof mockProfessional>) => void
+  addPortfolioItems: (items: Array<{ id: string; src: string; alt: string }>) => void
 }
 
 const MockStoreContext = createContext<MockStoreState | null>(null)
@@ -48,6 +49,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [appointments, setAppointments] = useState<MockAppointment[]>([])
   const [clients] = useState<MockClient[]>(mockClients)
   const [services] = useState<MockService[]>(mockServices)
+  const [portfolio, setPortfolio] = useState<Array<{ id: string; src: string; alt: string }>>(mockPortfolio)
 
   // Inicializar agendamentos com datas dinâmicas
   useEffect(() => {
@@ -61,6 +63,15 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     } else {
       setAppointments(generateMockAppointments())
     }
+
+    const savedPortfolio = localStorage.getItem('beleza-em-dia-portfolio')
+    if (savedPortfolio) {
+      try {
+        setPortfolio(JSON.parse(savedPortfolio))
+      } catch {
+        setPortfolio(mockPortfolio)
+      }
+    }
   }, [])
 
   // Persistir alterações de agendamentos no localStorage
@@ -69,6 +80,13 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('beleza-em-dia-appointments', JSON.stringify(appointments))
     }
   }, [appointments])
+
+  // Persistir portfolio no localStorage
+  useEffect(() => {
+    if (portfolio.length > 0) {
+      localStorage.setItem('beleza-em-dia-portfolio', JSON.stringify(portfolio))
+    }
+  }, [portfolio])
 
   const login = useCallback(() => setIsLoggedIn(true), [])
   const logout = useCallback(() => setIsLoggedIn(false), [])
@@ -87,6 +105,10 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     setProfessional(prev => ({ ...prev, ...data }))
   }, [])
 
+  const addPortfolioItems = useCallback((items: Array<{ id: string; src: string; alt: string }>) => {
+    setPortfolio(prev => [...items, ...prev])
+  }, [])
+
   const value: MockStoreState = {
     isLoggedIn,
     professional,
@@ -96,12 +118,13 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
     transactions: mockTransactions,
     financial: mockFinancial,
     schedule: mockSchedule,
-    portfolio: mockPortfolio,
+    portfolio,
     login,
     logout,
     updateAppointmentStatus,
     updateClientNotes,
     updateProfessional,
+    addPortfolioItems,
   }
 
   return (

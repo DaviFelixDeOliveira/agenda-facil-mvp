@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 
 type ModalKey = string
 
@@ -23,22 +23,55 @@ const ModalManagerContext = createContext<ModalManagerState | null>(null)
 export function ModalManagerProvider({ children }: { children: ReactNode }) {
   const [openModal, setOpenModal] = useState<ModalKey | null>(null)
   const [modalData, setModalData] = useState<ModalData>({})
+  const isClosingViaPopstate = useRef(false)
 
   const open = useCallback((key: ModalKey, data?: any) => {
-    // Close any existing modal before opening a new one
     setOpenModal(key)
     if (data !== undefined) {
       setModalData(prev => ({ ...prev, [key]: data }))
+    }
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ modalKey: key }, '')
     }
   }, [])
 
   const close = useCallback((key: ModalKey) => {
     setOpenModal(current => (current === key ? null : current))
+    setModalData(prev => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
   }, [])
 
   const closeAll = useCallback(() => {
     setOpenModal(null)
+    setModalData({})
   }, [])
+
+  // Listener para tecla ESC no desktop e botão voltar no mobile
+  useEffect(() => {
+    if (!openModal) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        close(openModal)
+      }
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      isClosingViaPopstate.current = true
+      closeAll()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [openModal, close, closeAll])
 
   const isOpen = useCallback((key: ModalKey) => {
     return openModal === key

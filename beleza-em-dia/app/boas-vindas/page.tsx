@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CalendarDays, Link2, DollarSign } from 'lucide-react'
-
 const carouselImages = [
   { src: '/carousel/carousel-close.png', alt: 'Nail art detalhada' },
   { src: '/carousel/carousel-extre.png', alt: 'Manicure e estética' },
@@ -23,7 +22,8 @@ export default function BoasVindasPage() {
   }, [])
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row relative bg-[#FAFAFA] dark:bg-[#090D16] transition-colors">
+
       {/* ========================================================
           LADO ESQUERDO — HERO ESCURO COM CARROSSEL (Desktop/Notebooks)
          ======================================================== */}
@@ -72,7 +72,7 @@ export default function BoasVindasPage() {
           </div>
         </div>
 
-        {/* 3 Benefícios Desktop (Com rolagem livre se a tela for compacta) */}
+        {/* 3 Benefícios Desktop */}
         <div className="space-y-2 z-10 w-full max-w-[340px] xl:max-w-[360px] pb-6 shrink-0">
           {[
             { icon: CalendarDays, title: 'Gestão completa de horários', desc: 'Controle total da sua agenda' },
@@ -91,14 +91,14 @@ export default function BoasVindasPage() {
       </div>
 
       {/* ========================================================
-          LADO DIREITO (Desktop) / TELA COMPLETA (Mobile & Tablets iPad)
+          LADO DIREITO (Desktop) / TELA COMPLETA (Mobile & Tablets)
          ======================================================== */}
-      <div className="flex-1 flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-8 md:p-12 min-h-screen lg:h-screen lg:overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center bg-[#FAFAFA] dark:bg-[#090D16] p-4 sm:p-8 md:p-12 min-h-screen lg:h-screen lg:overflow-y-auto transition-colors">
         <div className="w-full max-w-md sm:max-w-xl md:max-w-2xl lg:max-w-md space-y-6 py-4">
           
-          {/* ========== Versão Mobile & Tablet (iPad Mini/Air) ========== */}
-          <div className="lg:hidden bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-gray-100 space-y-6">
-            {/* Logo Grande com Texto Preto */}
+          {/* ========== Versão Mobile & Tablet ========== */}
+          <div className="lg:hidden bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-gray-100 dark:border-gray-800 space-y-6 transition-colors">
+            {/* Logo Dinâmica Claro/Escuro */}
             <div className="flex flex-col items-center text-center space-y-2">
               <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center mx-auto">
                 <Image
@@ -106,17 +106,25 @@ export default function BoasVindasPage() {
                   alt="Beleza em Dia"
                   width={224}
                   height={224}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain dark:hidden"
+                  priority
+                />
+                <Image
+                  src="/Logo Sem fundo texto branco.png"
+                  alt="Beleza em Dia"
+                  width={224}
+                  height={224}
+                  className="w-full h-full object-contain hidden dark:block"
                   priority
                 />
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
                 Sua agenda profissional e gestão de salão em um só lugar.
               </p>
             </div>
 
             {/* Carrossel Mobile / Tablet */}
-            <div className="relative rounded-2xl overflow-hidden aspect-[16/10] sm:aspect-[16/9] bg-gray-100 shadow-inner border border-gray-100">
+            <div className="relative rounded-2xl overflow-hidden aspect-[16/10] sm:aspect-[16/9] bg-gray-100 dark:bg-gray-800 shadow-inner border border-gray-100 dark:border-gray-800">
               {carouselImages.map((img, idx) => (
                 <div
                   key={idx}
@@ -146,16 +154,16 @@ export default function BoasVindasPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 { icon: CalendarDays, title: 'Gestão de horários', desc: 'Controle total da sua agenda.' },
-                { icon: Link2, title: 'Link Instagram/WhatsApp', desc: 'Facilite para clientes.' },
+                { icon: Link2, title: 'Link Bio/WhatsApp', desc: 'Facilite para clientes.' },
                 { icon: DollarSign, title: 'Controle financeiro', desc: 'Acompanhe seus ganhos.' },
               ].map((b, i) => (
-                <div key={i} className="flex items-start gap-3 sm:flex-col sm:items-center sm:text-center p-3 rounded-2xl bg-gray-50/70 border border-gray-100">
-                  <div className="w-8 h-8 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-brand shrink-0 shadow-2xs">
+                <div key={i} className="flex items-start gap-3 sm:flex-col sm:items-center sm:text-center p-3 rounded-2xl bg-gray-50/70 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700">
+                  <div className="w-8 h-8 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-brand shrink-0 shadow-2xs">
                     <b.icon className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#111827]">{b.title}</p>
-                    <p className="text-[11px] text-gray-500 leading-tight">{b.desc}</p>
+                    <p className="text-xs font-bold text-[#111827] dark:text-white">{b.title}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">{b.desc}</p>
                   </div>
                 </div>
               ))}
@@ -166,8 +174,8 @@ export default function BoasVindasPage() {
           <div className="space-y-4 text-center">
             {/* Desktop: Título e subtítulo */}
             <div className="hidden lg:block space-y-1.5 mb-6">
-              <h2 className="text-3xl font-extrabold text-[#111827] tracking-tight">Comece agora</h2>
-              <p className="text-sm text-gray-500">Crie sua conta ou acesse o seu painel profissional.</p>
+              <h2 className="text-3xl font-extrabold text-[#111827] dark:text-white tracking-tight">Comece agora</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Crie sua conta ou acesse o seu painel profissional.</p>
             </div>
 
             <div className="space-y-3">
@@ -180,7 +188,7 @@ export default function BoasVindasPage() {
 
               <Link
                 href="/login"
-                className="w-full py-4 border border-gray-200 bg-white text-[#111827] rounded-2xl font-bold text-sm hover:bg-gray-50 transition-all shadow-xs flex items-center justify-center text-center transform hover:scale-[1.01] active:scale-[0.99]"
+                className="w-full py-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[#111827] dark:text-white rounded-2xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-xs flex items-center justify-center text-center transform hover:scale-[1.01] active:scale-[0.99]"
               >
                 Já tenho uma conta / Entrar
               </Link>

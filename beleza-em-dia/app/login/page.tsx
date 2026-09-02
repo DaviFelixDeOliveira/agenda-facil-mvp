@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
-
 export default function LoginPage() {
   const [email, setEmail] = useState('bia@studiobian.com.br')
   const [password, setPassword] = useState('123456')
@@ -22,28 +21,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-8">
-      <div className="w-full max-w-md sm:max-w-lg bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 space-y-6">
-        {/* Logo Grande Centralizada — Fiel ao Protótipo */}
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#090D16] p-4 sm:p-8 transition-colors">
+      <div className="w-full max-w-md sm:max-w-lg bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 dark:border-gray-800 space-y-6 transition-colors">
+        {/* Logo Grande Centralizada */}
         <div className="flex flex-col items-center text-center space-y-3">
           <div className="relative w-48 h-48 flex items-center justify-center">
-            <Image src="/Logo Sem fundo texto preto.png" alt="Beleza em Dia" width={192} height={192} className="w-full h-full object-contain" priority />
+            <Image src="/Logo Sem fundo texto preto.png" alt="Beleza em Dia" width={192} height={192} className="w-full h-full object-contain dark:hidden" priority />
+            <Image src="/Logo Sem fundo texto branco.png" alt="Beleza em Dia" width={192} height={192} className="w-full h-full object-contain hidden dark:block" priority />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#111827]">Beleza em Dia</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Acesse sua conta profissional</p>
+            <h1 className="text-2xl font-bold text-[#111827] dark:text-white">Beleza em Dia</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Acesse sua conta profissional</p>
           </div>
         </div>
 
         {/* Formulário */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 bg-white text-sm text-[#111827] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
               placeholder="seu@email.com"
               required
             />
@@ -51,8 +51,8 @@ export default function LoginPage() {
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Senha</label>
-              <Link href="/esqueceu-senha/request" className="text-xs text-gray-500 hover:text-brand font-medium transition-colors">
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Senha</label>
+              <Link href="/esqueceu-senha/request" className="text-xs text-gray-500 dark:text-gray-400 hover:text-brand font-medium transition-colors">
                 Esqueceu a senha?
               </Link>
             </div>
@@ -61,7 +61,7 @@ export default function LoginPage() {
                 type={showPw ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3.5 pr-11 rounded-2xl border border-gray-200 bg-white text-sm text-[#111827] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3.5 pr-11 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                 placeholder="••••••••"
                 required
               />
@@ -79,7 +79,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-[#111827] text-white rounded-2xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+            className="w-full py-3.5 bg-[#111827] dark:bg-brand text-white rounded-2xl font-bold text-sm hover:bg-black dark:hover:bg-rose-700 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
           >
             {loading ? (
               <>
@@ -94,9 +94,9 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-gray-500 dark:text-gray-400">
           Ainda não tem conta?{' '}
-          <Link href="/signup" className="text-[#111827] font-bold hover:text-brand transition-colors">
+          <Link href="/signup" className="text-[#111827] dark:text-white font-bold hover:text-brand transition-colors">
             Cadastre-se
           </Link>
         </p>

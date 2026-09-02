@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMockStore } from '@/context/mock-store'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
@@ -34,6 +34,9 @@ import {
   Sun,
   Moon,
   Laptop,
+  Eye,
+  EyeOff,
+  Lock,
 } from 'lucide-react'
 import { LogoutModal } from '@/components/logout-modal'
 
@@ -53,15 +56,31 @@ function InstagramIcon({ className = 'w-5 h-5' }: { className?: string }) {
   )
 }
 
+function maskCpfCnpj(value: string) {
+  const digits = value.replace(/\D/g, '')
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+  }
+  return digits
+    .slice(0, 14)
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+}
+
 type ConfigSection =
   | 'menu'
   | 'negocio'
   | 'agenda'
-  | 'pagamento'
+  | 'pagamentos'
   | 'local'
   | 'notificacoes'
-  | 'compartilhamento'
   | 'seguranca'
+  | 'aparencia'
 
 export default function ConfiguracoesPage() {
   const { professional, schedule, updateProfessional } = useMockStore()
@@ -79,7 +98,6 @@ export default function ConfiguracoesPage() {
   const [cnpj, setCnpj] = useState(professional.cnpj)
   const [instagram, setInstagram] = useState('@studiobianails')
   const [bio, setBio] = useState(professional.bio)
-  const [specialty, setSpecialty] = useState(professional.specialty)
 
   // --- 2. Regras de Agenda ---
   const [agendaType, setAgendaType] = useState<'fixa' | 'livre'>('fixa')
@@ -101,24 +119,63 @@ export default function ConfiguracoesPage() {
   // --- 4. Local de Atendimento ---
   const [locationType, setLocationType] = useState<'salao' | 'domicilio' | 'ambos'>('salao')
   const [travelFee, setTravelFee] = useState('15')
-  const [travelRadius, setTravelRadius] = useState('10')
+  const [regionsServed, setRegionsServed] = useState('Centro, Zona Sul e proximidades')
+  const [street, setStreet] = useState('Rua das Flores')
+  const [streetNumber, setStreetNumber] = useState('123')
+  const [neighborhood, setNeighborhood] = useState('Jardins')
+  const [city, setCity] = useState('São Paulo - SP')
 
-  // --- 5. Notificações ---
-  const [notifPushNew, setNotifPushNew] = useState(true)
-  const [notifPushCancel, setNotifPushCancel] = useState(true)
-  const [notifPushReminder, setNotifPushReminder] = useState(true)
-  const [notifPushWeekly, setNotifPushWeekly] = useState(false)
-  const [notifEmailNew, setNotifEmailNew] = useState(false)
+  // --- 5. Notificações (MVP Simplificado) ---
+  const [notifEmailNew, setNotifEmailNew] = useState(true)
   const [notifEmailCancel, setNotifEmailCancel] = useState(true)
-  const [notifEmailWeekly, setNotifEmailWeekly] = useState(true)
-  const [reminderTime, setReminderTime] = useState('2') // horas antes
+  const [notifWhatsappReminder, setNotifWhatsappReminder] = useState(true)
 
   // --- 6. Segurança ---
   const [twoFactor, setTwoFactor] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loginType, setLoginType] = useState<'email' | 'google'>('email') // 'email' ou 'google'
+
+  // --- Exclusão de Conta ---
+  const [deleteCountdown, setDeleteCountdown] = useState(10)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [showDeletePassword, setShowDeletePassword] = useState(false)
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (showDeleteAccount) {
+      setDeleteCountdown(10)
+      setDeletePassword('')
+      setShowDeletePassword(false)
+      timer = setInterval(() => {
+        setDeleteCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setShowDeleteAccount(false)
+        }
+      }
+      window.addEventListener('keydown', handleKeyDown)
+      return () => {
+        if (timer) clearInterval(timer)
+        window.removeEventListener('keydown', handleKeyDown)
+      }
+    }
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [showDeleteAccount])
 
   // --- Estados Gerais ---
   const [hasChanges, setHasChanges] = useState(false)
@@ -135,7 +192,6 @@ export default function ConfiguracoesPage() {
       address,
       cnpj,
       bio,
-      specialty,
       pixSinal: pixEnabled,
       pixSinalTipo: pixTipo,
       pixSinalValor: pixValue,
@@ -156,30 +212,67 @@ export default function ConfiguracoesPage() {
     setTimeout(() => setCopiedLink(false), 2500)
   }
 
+  // --- Navegação com Suporte a Voltar (Mobile Gesture / Web History) ---
+  const navigateToSection = (section: ConfigSection) => {
+    if (section !== 'menu') {
+      window.history.pushState({ configSection: section }, '', `#${section}`)
+    }
+    setActiveSection(section)
+  }
+
+  useEffect(() => {
+    // Sincroniza hash inicial caso exista
+    const hash = window.location.hash.replace('#', '') as ConfigSection
+    if (hash && ['negocio', 'agenda', 'pagamento', 'local', 'notificacoes', 'compartilhamento', 'seguranca'].includes(hash)) {
+      setActiveSection(hash)
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state?.configSection) {
+        setActiveSection(e.state.configSection)
+      } else {
+        setActiveSection('menu')
+      }
+      setHasChanges(false)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
   // --- Navegação Mobile / Desktop ---
   const menuItems = [
     { key: 'negocio' as ConfigSection, label: 'Dados do Negócio', desc: 'Nome, CNPJ, bio e contatos', icon: Building2 },
     { key: 'agenda' as ConfigSection, label: 'Agenda e Expediente', desc: 'Tipo de agenda, horários e intervalos', icon: Clock },
     { key: 'pagamento' as ConfigSection, label: 'Pagamento e Sinal Pix', desc: 'Regras de sinal antecipado e taxas', icon: CreditCard },
     { key: 'local' as ConfigSection, label: 'Local de Atendimento', desc: 'No salão, domicílio ou ambos', icon: MapPin },
-    { key: 'notificacoes' as ConfigSection, label: 'Notificações', desc: 'Alertas push, WhatsApp e e-mail', icon: Bell },
+    { key: 'notificacoes' as ConfigSection, label: 'Notificações', desc: 'Alertas por e-mail e lembretes', icon: Bell },
     { key: 'compartilhamento' as ConfigSection, label: 'Compartilhamento & QR Code', desc: 'Link da bio e divulgação', icon: Share2 },
-    { key: 'seguranca' as ConfigSection, label: 'Segurança e Conta', desc: 'Senha, 2FA e preferências', icon: Shield },
+    { key: 'seguranca' as ConfigSection, label: 'Segurança e Conta', desc: 'Senha, método de acesso e tema', icon: Shield },
   ]
 
   const renderBackButton = (title: string) => (
-    <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-5">
+    <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800 mb-5">
       <button
         onClick={() => {
-          setActiveSection('menu')
+          if (window.history.state?.configSection) {
+            window.history.back()
+          } else {
+            setActiveSection('menu')
+            if (window.location.hash) {
+              window.history.replaceState(null, '', window.location.pathname)
+            }
+          }
           setHasChanges(false)
         }}
-        className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-[#111827] transition-colors"
+        className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-[#111827] dark:hover:text-white transition-colors"
       >
         <ChevronLeft className="w-5 h-5" />
         Voltar para o Menu
       </button>
-      <h2 className="text-base font-bold text-[#111827]">{title}</h2>
+      <h2 className="text-base font-bold text-[#111827] dark:text-white">{title}</h2>
     </div>
   )
 
@@ -188,12 +281,12 @@ export default function ConfiguracoesPage() {
       {/* Header Principal */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-[#111827]">Configurações</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Centro de controle e parametrização do seu negócio</p>
+          <h1 className="text-2xl font-bold text-[#111827] dark:text-white">Configurações</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">Centro de controle e parametrização do seu negócio</p>
         </div>
         {hasChanges && (
-          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-amber-800 text-xs font-semibold animate-fade-in">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+          <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-1.5 rounded-xl text-amber-800 dark:text-amber-300 text-xs font-semibold animate-fade-in">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
             Alterações pendentes
           </div>
         )}
@@ -204,18 +297,29 @@ export default function ConfiguracoesPage() {
          ======================================================== */}
       {activeSection === 'menu' && (
         <div className="space-y-4">
-          {/* Card Pro-Tip / Destaque */}
-          <div className="bg-gradient-to-r from-rose-50 to-pink-50/50 border border-rose-100 rounded-2xl p-4 flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand text-white flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5" />
+          {/* Card Pro-Tip / Destaque — Exibido apenas se o sinal Pix estiver desativado */}
+          {!pixEnabled && (
+            <div className="bg-gradient-to-r from-rose-50 to-pink-50/50 dark:from-rose-950/30 dark:to-pink-950/20 border border-rose-100 dark:border-rose-900/40 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-xs transition-all animate-fade-in">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-brand text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#111827] dark:text-white">Dica do Beleza em Dia</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5 max-w-xl">
+                    Mantenha a taxa de sinal ativada (sugerido R$ 30,00) para reduzir em até 85% as faltas e cancelamentos de última hora!
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigateToSection('pagamento')}
+                className="shrink-0 px-4 py-2 bg-brand text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-colors shadow-sm self-start sm:self-center"
+              >
+                Ativar Sinal Pix
+              </button>
             </div>
-            <div>
-              <p className="text-sm font-bold text-[#111827]">Dica do Beleza em Dia</p>
-              <p className="text-xs text-gray-600 mt-0.5">
-                Mantenha a taxa de sinal ativada (sugerido R$ 30,00) para reduzir em até 85% as faltas e cancelamentos de última hora!
-              </p>
-            </div>
-          </div>
+          )}
 
           {/* Grid de Itens do Menu */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -224,21 +328,21 @@ export default function ConfiguracoesPage() {
               return (
                 <button
                   key={item.key}
-                  onClick={() => setActiveSection(item.key)}
-                  className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:border-gray-200 transition-all text-left group"
+                  onClick={() => navigateToSection(item.key)}
+                  className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:border-gray-200 dark:hover:border-gray-700 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-xl bg-rose-50 text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#111827] group-hover:text-brand transition-colors">
+                      <p className="text-sm font-bold text-[#111827] dark:text-white group-hover:text-brand transition-colors">
                         {item.label}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.desc}</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-brand group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-brand group-hover:translate-x-0.5 transition-all" />
                 </button>
               )
             })}
@@ -250,7 +354,7 @@ export default function ConfiguracoesPage() {
           SEÇÃO 1: DADOS DO NEGÓCIO (Tela 17 do PDF)
          ======================================================== */}
       {activeSection === 'negocio' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 lg:p-6 space-y-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 lg:p-6 space-y-6 transition-colors">
           {renderBackButton('Dados do Negócio')}
 
           {/* Foto / Logo do Salão */}
@@ -268,8 +372,8 @@ export default function ConfiguracoesPage() {
               </button>
             </div>
             <div>
-              <p className="text-sm font-bold text-[#111827]">Foto / Logo do Estabelecimento</p>
-              <p className="text-xs text-gray-500 mt-0.5">Recomendado: Formato quadrado (500x500px, PNG ou JPG)</p>
+              <p className="text-sm font-bold text-[#111827] dark:text-white">Foto / Logo do Estabelecimento</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Recomendado: Formato quadrado (500x500px, PNG ou JPG)</p>
             </div>
           </div>
 
@@ -278,7 +382,7 @@ export default function ConfiguracoesPage() {
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Identificação</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Nome do Negócio / Salão *</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Nome do Negócio / Salão *</label>
                 <input
                   type="text"
                   value={studioName}
@@ -286,12 +390,12 @@ export default function ConfiguracoesPage() {
                     setStudioName(e.target.value)
                     triggerChange()
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[#111827] dark:text-white text-sm focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
                   placeholder="Ex: Studio Elegance"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Nome da Profissional Responsável *</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Nome da Profissional Responsável *</label>
                 <input
                   type="text"
                   value={profName}
@@ -299,49 +403,33 @@ export default function ConfiguracoesPage() {
                     setProfName(e.target.value)
                     triggerChange()
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[#111827] dark:text-white text-sm focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
                   placeholder="Ex: Bia Silva"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">CNPJ ou CPF (Opcional)</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">CNPJ ou CPF (Opcional)</label>
                 <input
                   type="text"
                   value={cnpj}
+                  maxLength={18}
                   onChange={(e) => {
-                    setCnpj(e.target.value)
+                    setCnpj(maskCpfCnpj(e.target.value))
                     triggerChange()
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
-                  placeholder="12.345.678/0001-90"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
+                  placeholder="000.000.000-00 ou 00.000.000/0001-00"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Especialidade Principal</label>
-                <select
-                  value={specialty}
-                  onChange={(e) => {
-                    setSpecialty(e.target.value)
-                    triggerChange()
-                  }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
-                >
-                  <option value="Nail Art & Estética">Manicure / Nail Art</option>
-                  <option value="Cabelereira & Colorista">Cabelereira & Colorista</option>
-                  <option value="Design de Sobrancelhas & Cílios">Sobrancelhas & Cílios</option>
-                  <option value="Estética Facial & Corporal">Estética Facial & Corporal</option>
-                  <option value="Salão de Beleza Completo">Salão Completo</option>
-                </select>
               </div>
             </div>
           </div>
 
           {/* Bloco de Contatos & Redes */}
-          <div className="space-y-4 pt-2 border-t border-gray-100">
+          <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Contato & Redes Sociais</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Telefone Comercial (WhatsApp)</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Telefone Comercial (WhatsApp)</label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -351,12 +439,12 @@ export default function ConfiguracoesPage() {
                       setPhone(e.target.value)
                       triggerChange()
                     }}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">E-mail de Contato</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">E-mail de Contato</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -366,12 +454,12 @@ export default function ConfiguracoesPage() {
                       setEmail(e.target.value)
                       triggerChange()
                     }}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Instagram Profissional</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Instagram Profissional</label>
                 <div className="relative">
                   <Instagram className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -381,7 +469,7 @@ export default function ConfiguracoesPage() {
                       setInstagram(e.target.value)
                       triggerChange()
                     }}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
                     placeholder="@seuperfil"
                   />
                 </div>
@@ -390,11 +478,11 @@ export default function ConfiguracoesPage() {
           </div>
 
           {/* Endereço Completo */}
-          <div className="space-y-4 pt-2 border-t border-gray-100">
+          <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Endereço do Estabelecimento</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Rua / Avenida e Número</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Rua / Avenida e Número</label>
                 <input
                   type="text"
                   value={address}
@@ -402,24 +490,24 @@ export default function ConfiguracoesPage() {
                     setAddress(e.target.value)
                     triggerChange()
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Cidade / UF</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Cidade / UF</label>
                 <input
                   type="text"
                   defaultValue="São Paulo - SP"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
                 />
               </div>
             </div>
           </div>
 
           {/* Bio / Resumo */}
-          <div className="space-y-2 pt-2 border-t border-gray-100">
+          <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <div className="flex justify-between items-center">
-              <label className="block text-xs font-semibold text-[#111827]">Bio Profissional (Visível para clientes)</label>
+              <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200">Bio Profissional (Visível para clientes)</label>
               <span className="text-[10px] text-gray-400">{bio.length}/150 caracteres</span>
             </div>
             <textarea
@@ -430,16 +518,16 @@ export default function ConfiguracoesPage() {
                 triggerChange()
               }}
               rows={3}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none resize-none"
               placeholder="Conte um pouco sobre sua experiência e diferenciais..."
             />
           </div>
 
           {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
             <button
               onClick={() => setActiveSection('menu')}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancelar
             </button>
@@ -454,16 +542,16 @@ export default function ConfiguracoesPage() {
       )}
 
       {/* ========================================================
-          SEÇÃO 2: REGRAS DE AGENDA & EXPEDIENTE (Tela 20 do PDF)
+          SEÇÃO 2: REGRAS DE AGENDA & EXPEDIENTE (Tela 19 do PDF)
          ======================================================== */}
       {activeSection === 'agenda' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 lg:p-6 space-y-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 lg:p-6 space-y-6 transition-colors">
           {renderBackButton('Agenda e Expediente')}
 
           {/* Info Box — Diferença entre Configuração e Agenda */}
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3.5 flex items-start gap-2.5">
-            <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-900 leading-relaxed">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-3.5 flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-900 dark:text-blue-200 leading-relaxed">
               <strong>Esta tela define as regras de funcionamento da sua agenda</strong> — os dias, horários e intervalos que você trabalha. A tela de &ldquo;Agenda&rdquo; no menu é onde você visualiza e gerencia os agendamentos com clientes.
             </p>
           </div>
@@ -480,15 +568,15 @@ export default function ConfiguracoesPage() {
                 }}
                 className={`p-4 rounded-2xl border text-left transition-all ${
                   agendaType === 'fixa'
-                    ? 'border-[#111827] bg-gray-50 ring-1 ring-[#111827]'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    ? 'border-[#111827] dark:border-gray-500 bg-gray-50 dark:bg-gray-800 ring-1 ring-[#111827] dark:ring-gray-500'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-sm text-[#111827]">Agenda Fixa</p>
-                  {agendaType === 'fixa' && <div className="w-2.5 h-2.5 rounded-full bg-[#111827]" />}
+                  <p className="font-bold text-sm text-[#111827] dark:text-white">Agenda Fixa</p>
+                  {agendaType === 'fixa' && <div className="w-2.5 h-2.5 rounded-full bg-[#111827] dark:bg-gray-400" />}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Seus horários se repetem semanalmente. Ideal para rotinas estabelecidas.
                 </p>
                 <p className="text-[10px] text-gray-400 mt-1.5 italic">
@@ -504,15 +592,15 @@ export default function ConfiguracoesPage() {
                 }}
                 className={`p-4 rounded-2xl border text-left transition-all ${
                   agendaType === 'livre'
-                    ? 'border-[#111827] bg-gray-50 ring-1 ring-[#111827]'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    ? 'border-[#111827] dark:border-gray-500 bg-gray-50 dark:bg-gray-800 ring-1 ring-[#111827] dark:ring-gray-500'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-sm text-[#111827]">Agenda Livre / Flexível</p>
-                  {agendaType === 'livre' && <div className="w-2.5 h-2.5 rounded-full bg-[#111827]" />}
+                  <p className="font-bold text-sm text-[#111827] dark:text-white">Agenda Livre / Flexível</p>
+                  {agendaType === 'livre' && <div className="w-2.5 h-2.5 rounded-full bg-[#111827] dark:bg-gray-400" />}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Configure os horários dia a dia no calendário. Ideal para freelancers e atendimento sob demanda.
                 </p>
                 <p className="text-[10px] text-gray-400 mt-1.5 italic">
@@ -523,10 +611,10 @@ export default function ConfiguracoesPage() {
           </div>
 
           {/* Grade Semanal com Intervalos */}
-          <div className="space-y-3 pt-2 border-t border-gray-100">
+          <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dias e Horários da Semana</p>
-              <span className="text-xs text-gray-500">Ative os dias em que você atende</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">Ative os dias em que você atende</span>
             </div>
 
             <div className="space-y-2.5">
@@ -534,13 +622,13 @@ export default function ConfiguracoesPage() {
                 <div
                   key={day.day}
                   className={`p-4 rounded-2xl border transition-all ${
-                    day.active ? 'border-gray-200 bg-white shadow-sm' : 'border-gray-100 bg-gray-50/50 opacity-60'
+                    day.active ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm' : 'border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 opacity-60'
                   }`}
                 >
                   {/* Toggle e Nome do Dia */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-[#111827]">{day.day}</span>
+                      <span className="text-sm font-bold text-[#111827] dark:text-white">{day.day}</span>
                     </div>
                     <button
                       type="button"
@@ -551,7 +639,7 @@ export default function ConfiguracoesPage() {
                         triggerChange()
                       }}
                       className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                        day.active ? 'bg-brand' : 'bg-gray-300'
+                        day.active ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
                       <div
@@ -568,11 +656,11 @@ export default function ConfiguracoesPage() {
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                         <div className="flex-1 w-full">
                           <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Início</label>
-                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                             <input
                               type="time"
                               defaultValue={day.start}
-                              className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
+                              className="w-full text-xs font-bold text-[#111827] dark:text-white outline-none bg-transparent"
                               onChange={triggerChange}
                             />
                             <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -581,11 +669,11 @@ export default function ConfiguracoesPage() {
 
                         <div className="flex-1 w-full">
                           <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Fim</label>
-                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200">
+                          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                             <input
                               type="time"
                               defaultValue={day.end}
-                              className="w-full text-xs font-bold text-[#111827] outline-none bg-transparent"
+                              className="w-full text-xs font-bold text-[#111827] dark:text-white outline-none bg-transparent"
                               onChange={triggerChange}
                             />
                             <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -614,18 +702,18 @@ export default function ConfiguracoesPage() {
           </div>
 
           {/* Regras de Tempo, Intervalo e Políticas */}
-          <div className="space-y-4 pt-2 border-t border-gray-100">
+          <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Regras de Tempo e Pausas</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Duração Padrão dos Serviços</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-300 mb-1.5">Duração Padrão dos Serviços</label>
                 <select
                   value={serviceDuration}
                   onChange={(e) => {
                     setServiceDuration(e.target.value)
                     triggerChange()
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:ring-2 focus:ring-brand outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-brand outline-none"
                 >
                   <option value="30">30 minutos</option>
                   <option value="45">45 minutos</option>
@@ -635,14 +723,14 @@ export default function ConfiguracoesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Intervalo entre Atendimentos</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-300 mb-1.5">Intervalo entre Atendimentos</label>
                 <select
                   value={serviceInterval}
                   onChange={(e) => {
                     setServiceInterval(e.target.value)
                     triggerChange()
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:ring-2 focus:ring-brand outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-brand outline-none"
                 >
                   <option value="0">Sem intervalo (direto)</option>
                   <option value="5">5 minutos</option>
@@ -653,27 +741,30 @@ export default function ConfiguracoesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Tolerância de Atraso da Cliente</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-300 mb-1.5">Tolerância de Atraso da Cliente</label>
                 <select
                   value={delayTolerance}
                   onChange={(e) => {
                     setDelayTolerance(e.target.value)
                     triggerChange()
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:ring-2 focus:ring-brand outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-[#111827] dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand outline-none"
                 >
-                  <option value="10">10 minutos</option>
-                  <option value="15">15 minutos (recomendado)</option>
-                  <option value="20">20 minutos</option>
+                  <option value="10" className="text-[#111827] bg-white dark:bg-gray-800">10 minutos</option>
+                  <option value="15" className="text-[#111827] bg-white dark:bg-gray-800">15 minutos (recomendado)</option>
+                  <option value="20" className="text-[#111827] bg-white dark:bg-gray-800">20 minutos</option>
                 </select>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Apenas informativo: constará no comprovante e mensagens para orientar a cliente, sem bloquear o sistema.
+                </p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">Antecedência Mínima para Agendamento</label>
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-300 mb-1.5">Antecedência Mínima para Agendamento</label>
                 <select
                   defaultValue="2"
                   onChange={triggerChange}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:ring-2 focus:ring-brand outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-brand outline-none"
                 >
                   <option value="1">1 hora antes</option>
                   <option value="2">2 horas antes (recomendado)</option>
@@ -685,12 +776,12 @@ export default function ConfiguracoesPage() {
           </div>
 
           {/* Política de Cancelamento */}
-          <div className="space-y-3 pt-2 border-t border-gray-100">
+          <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Política de Cancelamento</p>
             <select
               defaultValue="24"
               onChange={triggerChange}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:ring-2 focus:ring-brand outline-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-brand outline-none"
             >
               <option value="2">Cliente pode cancelar até 2 horas antes</option>
               <option value="12">Cliente pode cancelar até 12 horas antes</option>
@@ -703,9 +794,9 @@ export default function ConfiguracoesPage() {
           </div>
 
           {/* Resumo Visual da Agenda Configurada */}
-          <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
-            <p className="text-xs font-bold text-[#111827] mb-2">📋 Resumo da configuração atual:</p>
-            <ul className="text-xs text-gray-600 space-y-1">
+          <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+            <p className="text-xs font-bold text-[#111827] dark:text-white mb-2">📋 Resumo da configuração atual:</p>
+            <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
               <li>• Modelo: <strong>{agendaType === 'fixa' ? 'Agenda Fixa (Semanal)' : 'Agenda Livre (Flexível)'}</strong></li>
               <li>• Dias ativos: <strong>{weekSchedule.filter(d => d.active).map(d => d.day).join(', ') || 'Nenhum'}</strong></li>
               <li>• Duração padrão do serviço: <strong>{serviceDuration} min</strong></li>
@@ -714,10 +805,10 @@ export default function ConfiguracoesPage() {
           </div>
 
           {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
             <button
               onClick={() => setActiveSection('menu')}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancelar
             </button>
@@ -731,25 +822,23 @@ export default function ConfiguracoesPage() {
         </div>
       )}
 
-
-
       {/* ========================================================
-          SEÇÃO 3: PAGAMENTO & SINAL PIX (Regra Crítica)
+          SEÇÃO 3: PAGAMENTO & SINAL PIX (Tela 20 do PDF)
          ======================================================== */}
       {activeSection === 'pagamento' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 lg:p-6 space-y-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 lg:p-6 space-y-6 transition-colors">
           {renderBackButton('Pagamento e Sinal Pix')}
 
           {/* Toggle de Sinal Pix */}
-          <div className="p-4 rounded-2xl bg-rose-50/60 border border-rose-100 flex items-start justify-between gap-4">
+          <div className="p-4 rounded-2xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/50 flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[#111827]">Exigir taxa de sinal antecipada (Pix)</span>
+                <span className="text-sm font-bold text-[#111827] dark:text-white">Exigir taxa de sinal antecipada (Pix)</span>
                 <span className="px-2 py-0.5 rounded-full bg-brand text-white text-[10px] font-bold uppercase tracking-wider">
                   Anti No-Show
                 </span>
               </div>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                 Ao ativar, a cliente só terá o horário reservado definitivamente após confirmação do pagamento do sinal via Pix.
               </p>
             </div>
@@ -760,7 +849,7 @@ export default function ConfiguracoesPage() {
                 triggerChange()
               }}
               className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
-                pixEnabled ? 'bg-brand' : 'bg-gray-300'
+                pixEnabled ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-700'
               }`}
             >
               <div
@@ -775,7 +864,7 @@ export default function ConfiguracoesPage() {
             <div className="space-y-4 animate-fade-in">
               {/* Escolha entre Valor Fixo ou Porcentagem */}
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1.5">
+                <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">
                   Como você prefere cobrar o sinal?
                 </label>
                 <div className="grid grid-cols-2 gap-3 max-w-md">
@@ -788,7 +877,7 @@ export default function ConfiguracoesPage() {
                     className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                       pixTipo === 'fixo'
                         ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
-                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
                   >
                     <DollarSign className="w-4 h-4" />
@@ -804,7 +893,7 @@ export default function ConfiguracoesPage() {
                     className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                       pixTipo === 'porcentagem'
                         ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
-                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
                   >
                     <Percent className="w-4 h-4" />
@@ -816,26 +905,28 @@ export default function ConfiguracoesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {pixTipo === 'fixo' ? (
                   <div>
-                    <label className="block text-xs font-semibold text-[#111827] mb-1.5">Valor do Sinal Fixo (R$)</label>
+                    <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Valor do Sinal Fixo (R$)</label>
                     <div className="relative">
                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500">R$</span>
                       <input
                         type="number"
-                        min="5"
-                        max="500"
-                        value={pixValue}
+                        min="0"
+                        step="any"
+                        value={pixValue === 0 ? '' : pixValue}
                         onChange={(e) => {
-                          setPixValue(Number(e.target.value))
+                          const val = parseFloat(e.target.value)
+                          setPixValue(isNaN(val) ? 0 : val)
                           triggerChange()
                         }}
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-[#111827] focus:ring-2 focus:ring-brand outline-none"
+                        placeholder="30,00"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-bold text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
                       />
                     </div>
                     <p className="text-[11px] text-gray-400 mt-1">Valor fixo cobrado em qualquer serviço agendado.</p>
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-semibold text-[#111827] mb-1.5">Porcentagem do Serviço (%)</label>
+                    <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Porcentagem do Serviço (%)</label>
                     <div className="relative">
                       <input
                         type="number"
@@ -852,7 +943,7 @@ export default function ConfiguracoesPage() {
                           if (isNaN(value) || value < 0) setPixPorcentagem(0)
                           else if (value > 100) setPixPorcentagem(100)
                         }}
-                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-[#111827] focus:ring-2 focus:ring-brand outline-none"
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-bold text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
                       />
                       <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500">%</span>
                     </div>
@@ -861,14 +952,14 @@ export default function ConfiguracoesPage() {
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#111827] mb-1.5">Prazo de Cancelamento sem Perda</label>
+                  <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Prazo de Cancelamento sem Perda</label>
                   <select
                     value={cancelPolicyHours}
                     onChange={(e) => {
                       setCancelPolicyHours(e.target.value)
                       triggerChange()
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:ring-2 focus:ring-brand outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-brand outline-none"
                   >
                     <option value="12">Até 12 horas antes</option>
                     <option value="24">Até 24 horas antes (Padrão recomendado)</option>
@@ -878,12 +969,12 @@ export default function ConfiguracoesPage() {
               </div>
 
               {/* Prévia de Simulação do Sinal */}
-              <div className="p-3.5 rounded-2xl bg-rose-50/40 border border-rose-100 flex items-center gap-3">
+              <div className="p-3.5 rounded-2xl bg-rose-50/40 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center shrink-0 text-xs font-bold">
                   {pixTipo === 'porcentagem' ? `${pixPorcentagem}%` : `R$`}
                 </div>
-                <div className="text-xs text-gray-700">
-                  <span className="font-bold text-[#111827]">Exemplo Prático: </span>
+                <div className="text-xs text-gray-700 dark:text-gray-300">
+                  <span className="font-bold text-[#111827] dark:text-white">Exemplo Prático: </span>
                   {pixTipo === 'porcentagem' ? (
                     <>
                       Para um serviço de <strong>R$ 100,00</strong>, a cliente pagará <strong>R$ {(100 * (pixPorcentagem / 100)).toFixed(2).replace('.', ',')}</strong> antecipado via Pix e o restante no local.
@@ -897,9 +988,9 @@ export default function ConfiguracoesPage() {
               </div>
 
               {/* Box Informativo da Política */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-2.5">
-                <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-900 leading-relaxed">
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl p-3.5 flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
                   <strong>Regra de Reembolso:</strong> Se a cliente cancelar com antecedência superior a {cancelPolicyHours} horas, o sinal é reembolsado automaticamente. Em caso de falta sem aviso prévio (No-Show), o valor do sinal é retido como compensação pelo horário bloqueado.
                 </p>
               </div>
@@ -907,14 +998,14 @@ export default function ConfiguracoesPage() {
           )}
 
           {/* Formas de Pagamento Aceitas no Salão */}
-          <div className="space-y-3 pt-2 border-t border-gray-100">
+          <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Formas de Pagamento no Salão / Balcão</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50">
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <input type="checkbox" defaultChecked disabled className="accent-brand" />
-                <span className="text-xs font-semibold text-[#111827]">Pix (Obrigatório)</span>
+                <span className="text-xs font-semibold text-[#111827] dark:text-white">Pix (Obrigatório)</span>
               </label>
-              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50">
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <input
                   type="checkbox"
                   checked={acceptCards}
@@ -924,9 +1015,9 @@ export default function ConfiguracoesPage() {
                   }}
                   className="accent-brand"
                 />
-                <span className="text-xs font-semibold text-[#111827]">Cartão de Crédito / Débito</span>
+                <span className="text-xs font-semibold text-[#111827] dark:text-white">Cartão de Crédito / Débito</span>
               </label>
-              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50">
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <input
                   type="checkbox"
                   checked={acceptCash}
@@ -936,16 +1027,16 @@ export default function ConfiguracoesPage() {
                   }}
                   className="accent-brand"
                 />
-                <span className="text-xs font-semibold text-[#111827]">Dinheiro em Espécie</span>
+                <span className="text-xs font-semibold text-[#111827] dark:text-white">Dinheiro em Espécie</span>
               </label>
             </div>
           </div>
 
           {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
             <button
               onClick={() => setActiveSection('menu')}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancelar
             </button>
@@ -963,7 +1054,7 @@ export default function ConfiguracoesPage() {
           SEÇÃO 4: LOCAL DE ATENDIMENTO
          ======================================================== */}
       {activeSection === 'local' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 lg:p-6 space-y-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 lg:p-6 space-y-6 transition-colors">
           {renderBackButton('Local de Atendimento')}
 
           <div className="space-y-3">
@@ -983,23 +1074,83 @@ export default function ConfiguracoesPage() {
                   }}
                   className={`p-4 rounded-2xl border text-left transition-all ${
                     locationType === loc.key
-                      ? 'border-brand bg-rose-50/50 ring-1 ring-brand'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
+                      ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 ring-1 ring-brand'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                 >
-                  <p className="font-bold text-sm text-[#111827]">{loc.label}</p>
-                  <p className="text-xs text-gray-500 mt-1">{loc.desc}</p>
+                  <p className="font-bold text-sm text-[#111827] dark:text-white">{loc.label}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{loc.desc}</p>
                 </button>
               ))}
             </div>
           </div>
 
+          {locationType === 'salao' && (
+            <div className="space-y-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 animate-fade-in">
+              <p className="text-xs font-bold text-[#111827] dark:text-gray-200 uppercase tracking-wider">Endereço Fixo do Estabelecimento</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Rua / Logradouro</label>
+                  <input
+                    type="text"
+                    value={street}
+                    onChange={(e) => {
+                      setStreet(e.target.value)
+                      triggerChange()
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold bg-white dark:bg-gray-900 text-[#111827] dark:text-white outline-none focus:ring-2 focus:ring-brand"
+                    placeholder="Ex: Rua das Flores"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Número e Complemento</label>
+                  <input
+                    type="text"
+                    value={streetNumber}
+                    onChange={(e) => {
+                      setStreetNumber(e.target.value)
+                      triggerChange()
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold bg-white dark:bg-gray-900 text-[#111827] dark:text-white outline-none focus:ring-2 focus:ring-brand"
+                    placeholder="Ex: 123, Sala 4"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Bairro</label>
+                  <input
+                    type="text"
+                    value={neighborhood}
+                    onChange={(e) => {
+                      setNeighborhood(e.target.value)
+                      triggerChange()
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold bg-white dark:bg-gray-900 text-[#111827] dark:text-white outline-none focus:ring-2 focus:ring-brand"
+                    placeholder="Ex: Jardins"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Cidade e Estado</label>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => {
+                      setCity(e.target.value)
+                      triggerChange()
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold bg-white dark:bg-gray-900 text-[#111827] dark:text-white outline-none focus:ring-2 focus:ring-brand"
+                    placeholder="Ex: São Paulo - SP"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {(locationType === 'domicilio' || locationType === 'ambos') && (
-            <div className="space-y-4 p-4 rounded-2xl bg-gray-50 border border-gray-100 animate-fade-in">
-              <p className="text-xs font-bold text-[#111827] uppercase tracking-wider">Regras de Deslocamento Domiciliar</p>
+            <div className="space-y-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 animate-fade-in">
+              <p className="text-xs font-bold text-[#111827] dark:text-gray-200 uppercase tracking-wider">Regras de Deslocamento Domiciliar</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[#111827] mb-1.5">Taxa de Deslocamento Padrão (R$)</label>
+                  <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Taxa de Deslocamento Padrão (R$)</label>
                   <input
                     type="number"
                     value={travelFee}
@@ -1007,21 +1158,21 @@ export default function ConfiguracoesPage() {
                       setTravelFee(e.target.value)
                       triggerChange()
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold bg-white outline-none focus:ring-2 focus:ring-brand"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold bg-white dark:bg-gray-900 text-[#111827] dark:text-white outline-none focus:ring-2 focus:ring-brand"
                     placeholder="Ex: 15,00"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-[#111827] mb-1.5">Raio Máximo de Atendimento (km)</label>
+                  <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Regiões / Bairros Atendidos (Opcional)</label>
                   <input
-                    type="number"
-                    value={travelRadius}
+                    type="text"
+                    value={regionsServed}
                     onChange={(e) => {
-                      setTravelRadius(e.target.value)
+                      setRegionsServed(e.target.value)
                       triggerChange()
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold bg-white outline-none focus:ring-2 focus:ring-brand"
-                    placeholder="Ex: 10 km"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold bg-white dark:bg-gray-900 text-[#111827] dark:text-white outline-none focus:ring-2 focus:ring-brand"
+                    placeholder="Ex: Bairros Centro, Zona Sul e proximidades"
                   />
                 </div>
               </div>
@@ -1029,10 +1180,10 @@ export default function ConfiguracoesPage() {
           )}
 
           {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
             <button
               onClick={() => setActiveSection('menu')}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancelar
             </button>
@@ -1047,88 +1198,106 @@ export default function ConfiguracoesPage() {
       )}
 
       {/* ========================================================
-          SEÇÃO 5: CONFIGURAÇÕES DE NOTIFICAÇÃO (Tela 18 do PDF)
+          SEÇÃO 5: CONFIGURAÇÕES DE NOTIFICAÇÃO (MVP Simplificado)
          ======================================================== */}
       {activeSection === 'notificacoes' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 lg:p-6 space-y-6">
-          {renderBackButton('Configurações de Notificação')}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 lg:p-6 space-y-6 transition-colors">
+          {renderBackButton('Notificações')}
 
-          {/* Push no App */}
-          <div className="space-y-3">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Notificações no Aplicativo (Push)</p>
-            <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">
-              {[
-                { label: 'Novos Agendamentos', desc: 'Seja avisada em tempo real quando uma cliente agendar', state: notifPushNew, set: setNotifPushNew },
-                { label: 'Cancelamentos e Desmarcações', desc: 'Receba alertas imediatos sobre horários liberados', state: notifPushCancel, set: setNotifPushCancel },
-                { label: 'Lembretes de Início de Atendimento', desc: 'Aviso sonoro/notificação 15 minutos antes de cada cliente', state: notifPushReminder, set: setNotifPushReminder },
-                { label: 'Relatórios Semanais de Faturamento', desc: 'Resumo consolidado toda segunda-feira de manhã', state: notifPushWeekly, set: setNotifPushWeekly },
-              ].map((n, i) => (
-                <div key={i} className="p-4 flex items-center justify-between hover:bg-gray-50/60 transition-colors">
-                  <div>
-                    <p className="text-sm font-semibold text-[#111827]">{n.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{n.desc}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      n.set(!n.state)
-                      triggerChange()
-                    }}
-                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
-                      n.state ? 'bg-brand' : 'bg-gray-200'
-                    }`}
-                  >
-                    <div
-                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                        n.state ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-              ))}
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Notificações por E-mail</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Configure os alertas essenciais que você receberá sobre seus agendamentos.
+              </p>
             </div>
-          </div>
 
-          {/* Notificações por E-mail */}
-          <div className="space-y-3 pt-2 border-t border-gray-100">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Notificações por E-mail</p>
-            <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">
-              {[
-                { label: 'Novos Agendamentos por E-mail', desc: 'Receber cópia do comprovante na caixa de entrada', state: notifEmailNew, set: setNotifEmailNew },
-                { label: 'Avisos de Cancelamento', desc: 'Receber detalhes do cancelamento por e-mail', state: notifEmailCancel, set: setNotifEmailCancel },
-                { label: 'Relatório Mensal Financeiro (PDF)', desc: 'Envio mensal do relatório contábil do salão', state: notifEmailWeekly, set: setNotifEmailWeekly },
-              ].map((n, i) => (
-                <div key={i} className="p-4 flex items-center justify-between hover:bg-gray-50/60 transition-colors">
-                  <div>
-                    <p className="text-sm font-semibold text-[#111827]">{n.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{n.desc}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      n.set(!n.state)
-                      triggerChange()
-                    }}
-                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
-                      n.state ? 'bg-brand' : 'bg-gray-200'
-                    }`}
-                  >
-                    <div
-                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                        n.state ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
+            <div className="divide-y divide-gray-100 dark:divide-gray-800 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
+              {/* Novos Agendamentos */}
+              <div className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <div>
+                  <p className="text-sm font-semibold text-[#111827] dark:text-white">Novos Agendamentos</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Receber um e-mail transacional sempre que uma cliente agendar e pagar o sinal.
+                  </p>
                 </div>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotifEmailNew(!notifEmailNew)
+                    triggerChange()
+                  }}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
+                    notifEmailNew ? 'bg-brand' : 'bg-gray-200 dark:bg-gray-700'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                      notifEmailNew ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Cancelamentos */}
+              <div className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <div>
+                  <p className="text-sm font-semibold text-[#111827] dark:text-white">Cancelamentos e Desmarcações</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Receber um e-mail se um agendamento for cancelado ou uma vaga liberada.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotifEmailCancel(!notifEmailCancel)
+                    triggerChange()
+                  }}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
+                    notifEmailCancel ? 'bg-brand' : 'bg-gray-200 dark:bg-gray-700'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                      notifEmailCancel ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Lembretes de Atendimento (In-App / WhatsApp) */}
+              <div className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <div>
+                  <p className="text-sm font-semibold text-[#111827] dark:text-white">Lembretes de Atendimento (In-App / WhatsApp)</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Alerta visual no painel e link rápido inteligente (wa.me) para lembrar a cliente do próximo horário sem custo.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotifWhatsappReminder(!notifWhatsappReminder)
+                    triggerChange()
+                  }}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
+                    notifWhatsappReminder ? 'bg-brand' : 'bg-gray-200 dark:bg-gray-700'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                      notifWhatsappReminder ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
             <button
               onClick={() => setActiveSection('menu')}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancelar
             </button>
@@ -1146,15 +1315,15 @@ export default function ConfiguracoesPage() {
           SEÇÃO 6: COMPARTILHAMENTO & QR CODE (Tela 21 do PDF)
          ======================================================== */}
       {activeSection === 'compartilhamento' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 lg:p-6 space-y-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 lg:p-6 space-y-6 transition-colors">
           {renderBackButton('Compartilhamento')}
 
           {/* Link Público com botão Copiar */}
           <div className="space-y-2">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Seu Link Público de Agendamento</p>
-            <p className="text-xs text-gray-500">Cole este link na sua Bio do Instagram ou envie diretamente para as clientes.</p>
-            <div className="flex items-center gap-2 p-2 rounded-xl border border-gray-200 bg-gray-50">
-              <span className="text-sm font-semibold text-[#111827] px-2 truncate flex-1">{professional.publicUrl}</span>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Cole este link na sua Bio do Instagram ou envie diretamente para as clientes.</p>
+            <div className="flex items-center gap-2 p-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              <span className="text-sm font-semibold text-[#111827] dark:text-white px-2 truncate flex-1">{professional.publicUrl}</span>
               <button
                 onClick={handleCopy}
                 className="px-4 py-2 bg-brand text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition-colors flex items-center gap-1.5 shrink-0"
@@ -1166,11 +1335,11 @@ export default function ConfiguracoesPage() {
           </div>
 
           {/* QR Code para Recepção */}
-          <div className="space-y-3 pt-2 border-t border-gray-100">
+          <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">QR Code para Recepção / Balcão</p>
-            <p className="text-xs text-gray-500">Imprima e coloque na sua recepção para que clientes agendem direto pelo celular.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Imprima e coloque na sua recepção para que clientes agendem direto pelo celular.</p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
+            <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
               {/* QR Code Visual */}
               <div className="w-36 h-36 bg-white rounded-2xl border border-gray-200 p-3 flex flex-col items-center justify-center shadow-sm">
                 <div className="w-full h-full border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-center p-2">
@@ -1181,30 +1350,30 @@ export default function ConfiguracoesPage() {
               </div>
 
               <div className="space-y-2 text-center sm:text-left">
-                <p className="text-sm font-bold text-[#111827]">Placa de Balcão (A6)</p>
-                <p className="text-xs text-gray-500 max-w-sm">
-                  Gera uma arte pronta para impressão com a sua logo, cores e QR Code oficial de agendamento.
+                <p className="text-sm font-bold text-[#111827] dark:text-white">QR Code de Agendamento</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm">
+                  Gera uma imagem de alta resolução do seu QR Code oficial para divulgação.
                 </p>
                 <button
                   onClick={() => toast.success('Download do QR Code em alta resolução iniciado!')}
-                  className="px-4 py-2 rounded-xl border border-gray-300 bg-white text-xs font-bold text-[#111827] hover:bg-gray-50 transition-colors inline-flex items-center gap-1.5 shadow-sm"
+                  className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs font-bold text-[#111827] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors inline-flex items-center gap-1.5 shadow-sm"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Baixar Imagem para Impressão
+                  Baixar QR Code (PNG)
                 </button>
               </div>
             </div>
           </div>
 
           {/* Compartilhamento Rápido */}
-          <div className="space-y-3 pt-2 border-t border-gray-100">
+          <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Compartilhamento Rápido</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Olá! Gostaria de agendar um horário? Confira meus serviços e horários disponíveis aqui: ${professional.publicUrl}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(`Agende seu horário comigo pelo link: ${professional.publicUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-800 text-center hover:bg-emerald-100 transition-colors flex flex-col items-center justify-center gap-1.5 shadow-xs"
+                className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-center hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors flex flex-col items-center justify-center gap-1.5 shadow-xs"
               >
                 <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-xs">
                   <WhatsAppIcon className="w-4.5 h-4.5" />
@@ -1212,33 +1381,13 @@ export default function ConfiguracoesPage() {
                 <span className="text-xs font-bold">WhatsApp</span>
               </a>
 
-              <button
-                onClick={handleCopy}
-                className="p-3.5 rounded-2xl bg-pink-50/80 border border-pink-200 text-pink-800 text-center hover:bg-pink-100 transition-colors flex flex-col items-center justify-center gap-1.5 shadow-xs"
-              >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shadow-xs">
-                  <InstagramIcon className="w-4.5 h-4.5" />
-                </div>
-                <span className="text-xs font-bold">Instagram Bio</span>
-              </button>
-
-              <a
-                href={`mailto:?subject=Agendamento no ${professional.studioName}&body=Acesse: ${professional.publicUrl}`}
-                className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200 text-blue-800 text-center hover:bg-blue-100 transition-colors flex flex-col items-center justify-center gap-1.5 shadow-xs"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                  <Mail className="w-4.5 h-4.5" />
-                </div>
-                <span className="text-xs font-bold">E-mail</span>
-              </a>
-
               <a
                 href={`/${professional.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3.5 rounded-2xl bg-gray-50/80 border border-gray-200 text-gray-800 text-center hover:bg-gray-100 transition-colors flex flex-col items-center justify-center gap-1.5 shadow-xs"
+                className="p-3.5 rounded-2xl bg-gray-50/80 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-300 text-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex flex-col items-center justify-center gap-1.5 shadow-xs"
               >
-                <div className="w-8 h-8 rounded-full bg-[#111827] text-white flex items-center justify-center shadow-xs">
+                <div className="w-8 h-8 rounded-full bg-[#111827] dark:bg-gray-700 text-white flex items-center justify-center shadow-xs">
                   <ExternalLink className="w-4 h-4" />
                 </div>
                 <span className="text-xs font-bold">Ver Vitrine</span>
@@ -1252,185 +1401,146 @@ export default function ConfiguracoesPage() {
           SEÇÃO 7: SEGURANÇA E CONTA (Tela 22 do PDF)
          ======================================================== */}
       {activeSection === 'seguranca' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 lg:p-6 space-y-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 lg:p-6 space-y-6 transition-colors">
           {renderBackButton('Segurança e Conta')}
 
-          {/* Tipo de Login */}
+          {/* Método de Acesso (Informativo e Dinâmico) */}
           <div className="space-y-3">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Método de Acesso</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setLoginType('email')}
-                className={`p-4 rounded-2xl border text-left transition-all ${
-                  loginType === 'email'
-                    ? 'border-brand bg-rose-50/50 shadow-xs'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center justify-between">
+            {loginType === 'google' ? (
+              <div className="p-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center shrink-0 shadow-xs">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                </div>
+                <div>
                   <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                      <polyline points="22,6 12,13 2,6" />
-                    </svg>
-                    <span className="font-bold text-sm text-[#111827]">E-mail e Senha</span>
+                    <p className="font-bold text-sm text-[#111827] dark:text-white">Conectado com o Google</p>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">Ativo</span>
                   </div>
-                  {loginType === 'email' && <div className="w-2.5 h-2.5 rounded-full bg-brand" />}
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{email}</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Acesso tradicional com e-mail e senha pessoal
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setLoginType('google')}
-                className={`p-4 rounded-2xl border text-left transition-all ${
-                  loginType === 'google'
-                    ? 'border-brand bg-rose-50/50 shadow-xs'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                    </svg>
-                    <span className="font-bold text-sm text-[#111827]">Google</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center shrink-0 shadow-xs">
+                    <Mail className="w-5 h-5 text-gray-700 dark:text-gray-200" />
                   </div>
-                  {loginType === 'google' && <div className="w-2.5 h-2.5 rounded-full bg-brand" />}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-sm text-[#111827] dark:text-white">Acesso via E-mail e Senha</p>
+                      <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 text-[10px] font-bold">Ativo</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{email}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Acesso via conta Google (sem senha própria)
-                </p>
-              </button>
-            </div>
-          </div>
 
-          {/* Alterar Senha - apenas para login com e-mail */}
-          {loginType === 'email' && (
-            <div className="space-y-3 pt-2 border-t border-gray-100">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Alterar Senha</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-[#111827] mb-1.5">Senha Atual</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none"
-                  />
+                {/* Alterar Senha */}
+                <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Alterar Senha</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Senha Atual</label>
+                      <div className="relative">
+                        <input
+                          type={showCurrentPassword ? 'text' : 'password'}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                          aria-label={showCurrentPassword ? 'Ocultar senha' : 'Ver senha'}
+                        >
+                          {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Nova Senha</label>
+                      <div className="relative">
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Mínimo 6 caracteres"
+                          className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                          aria-label={showNewPassword ? 'Ocultar senha' : 'Ver senha'}
+                        >
+                          {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Confirmar Nova Senha</label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Repita a nova senha"
+                          className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                          aria-label={showConfirmPassword ? 'Ocultar senha' : 'Ver senha'}
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!newPassword || newPassword !== confirmPassword) {
+                          toast.error('As senhas não coincidem!')
+                          return
+                        }
+                        toast.success('Senha atualizada com sucesso!')
+                        setCurrentPassword('')
+                        setNewPassword('')
+                        setConfirmPassword('')
+                      }}
+                      className="px-5 py-2.5 bg-brand text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-colors shadow-sm"
+                    >
+                      Atualizar Senha
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111827] mb-1.5">Nova Senha</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#111827] mb-1.5">Confirmar Nova Senha</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repita a nova senha"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand outline-none"
-                  />
-                </div>
               </div>
-              <div className="flex justify-end pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!newPassword || newPassword !== confirmPassword) {
-                      toast.error('As senhas não coincidem!')
-                      return
-                    }
-                    toast.success('Senha atualizada com sucesso!')
-                    setCurrentPassword('')
-                    setNewPassword('')
-                    setConfirmPassword('')
-                  }}
-                  className="px-5 py-2 bg-[#111827] text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-colors"
-                >
-                  Atualizar Senha
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Info para login Google */}
-          {loginType === 'google' && (
-            <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16v-4" />
-                  <path d="M12 8h.01" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-blue-800">Login via Google</p>
-                <p className="text-xs text-blue-700 mt-1">
-                  Como você acessa com sua conta Google, não há senha própria para alterar.
-                  A segurança é gerenciada diretamente pelo Google (incluindo 2FA).
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Autenticação em 2 Etapas */}
-          <div className="space-y-3 pt-2 border-t border-gray-100">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Autenticação & Acesso</p>
-            <div className="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-[#111827]">Autenticação em 2 Etapas (Código no E-mail)</p>
-                <p className="text-xs text-gray-500 mt-0.5">Adiciona uma camada extra exigindo código OTP de 6 dígitos ao logar</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setTwoFactor(!twoFactor)
-                  toast.info(twoFactor ? '2FA desativado' : '2FA ativado com sucesso')
-                }}
-                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
-                  twoFactor ? 'bg-brand' : 'bg-gray-300'
-                }`}
-              >
-                <div
-                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                    twoFactor ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
+            )}
           </div>
 
           {/* Preferências de Tema / Aparência */}
-          <div className="space-y-3 pt-2 border-t border-gray-100">
+          <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Aparência do Painel</p>
             <div>
-              <label className="block text-xs font-semibold text-[#111827] mb-2">Tema de Exibição</label>
+              <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-2">Tema de Exibição</label>
               <div className="grid grid-cols-3 gap-2.5 max-w-md">
                 <button
                   type="button"
-                  onClick={() => {
-                    setTheme('light')
-                    toast.success('Tema Claro ativado!')
-                  }}
+                  onClick={() => setTheme('light')}
                   className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${
                     theme === 'light'
-                      ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 text-brand shadow-xs'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   <Sun className="w-4 h-4" />
@@ -1439,14 +1549,11 @@ export default function ConfiguracoesPage() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setTheme('dark')
-                    toast.success('Tema Escuro ativado!')
-                  }}
+                  onClick={() => setTheme('dark')}
                   className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${
                     theme === 'dark'
-                      ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 text-brand shadow-xs'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   <Moon className="w-4 h-4" />
@@ -1455,14 +1562,11 @@ export default function ConfiguracoesPage() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setTheme('system')
-                    toast.info('Tema Padrão do Sistema selecionado!')
-                  }}
+                  onClick={() => setTheme('system')}
                   className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${
                     theme === 'system'
-                      ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 text-brand shadow-xs'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   <Laptop className="w-4 h-4" />
@@ -1473,17 +1577,17 @@ export default function ConfiguracoesPage() {
           </div>
 
           {/* Zona de Perigo */}
-          <div className="space-y-3 pt-4 border-t border-red-100">
-            <p className="text-xs font-bold text-red-600 uppercase tracking-wider">Zona de Perigo</p>
-            <p className="text-xs text-gray-500">Ações com impacto na sessão e nos dados cadastrados.</p>
+          <div className="space-y-3 pt-4 border-t border-red-100 dark:border-red-900/40">
+            <p className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">Zona de Perigo</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Ações com impacto na sessão e nos dados cadastrados.</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <button
                 type="button"
                 onClick={() => setShowLogout(true)}
-                className="py-3 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                className="py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-xs"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 Sair da Conta (Logout)
               </button>
 
@@ -1516,39 +1620,83 @@ export default function ConfiguracoesPage() {
           onClick={() => setShowDeleteAccount(false)}
         >
           <div
-            className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 border border-gray-100 text-center relative z-10"
+            className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 border border-gray-100 dark:border-gray-800 text-center relative z-10 transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto shadow-xs">
+            <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-xs border border-red-100 dark:border-red-900/40">
               <Trash2 className="w-7 h-7" />
             </div>
 
             <div className="space-y-1.5">
-              <h3 className="text-lg font-bold text-[#111827]">Excluir sua conta definitivamente?</h3>
-              <p className="text-xs text-gray-500 max-w-xs mx-auto leading-relaxed">
+              <h3 className="text-lg font-bold text-[#111827] dark:text-white">Excluir sua conta definitivamente?</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs mx-auto leading-relaxed">
                 Esta ação é irreversível. Todos os seus agendamentos, clientes cadastrados e configurações serão excluídos.
               </p>
+            </div>
+
+            {/* Confirmação de Senha */}
+            <div className="text-left space-y-1.5 pt-1">
+              <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                Digite sua senha para confirmar:
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type={showDeletePassword ? 'text' : 'password'}
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="Sua senha de acesso"
+                  className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-[#111827] dark:text-white focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDeletePassword(!showDeletePassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                  aria-label={showDeletePassword ? 'Ocultar senha' : 'Ver senha'}
+                >
+                  {showDeletePassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => setShowDeleteAccount(false)}
-                className="py-3 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                className="py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 type="button"
+                disabled={deleteCountdown > 0 || !deletePassword.trim()}
                 onClick={() => {
+                  if (!deletePassword.trim()) {
+                    toast.error('Por favor, digite sua senha para confirmar a exclusão.')
+                    return
+                  }
                   toast.success('Conta excluída com sucesso.')
                   setTimeout(() => {
                     window.location.href = '/boas-vindas'
                   }, 500)
                 }}
-                className="py-3 px-4 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors shadow-sm"
+                className={`py-3 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 ${
+                  deleteCountdown > 0 || !deletePassword.trim()
+                    ? 'bg-red-200 dark:bg-red-950/40 text-red-400 dark:text-red-500/50 cursor-not-allowed opacity-75'
+                    : 'bg-red-600 hover:bg-red-700 text-white cursor-pointer active:scale-[0.98]'
+                }`}
               >
-                Sim, Excluir
+                {deleteCountdown > 0 ? (
+                  <>
+                    <span>Sim, Excluir</span>
+                    <span className="bg-red-300/60 dark:bg-red-900/60 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded-md text-[10px] font-mono">
+                      {deleteCountdown}s
+                    </span>
+                  </>
+                ) : (
+                  'Sim, Excluir'
+                )}
               </button>
             </div>
           </div>

@@ -4,12 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { User, Mail, Lock } from 'lucide-react'
-
+import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 export default function SignupPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
@@ -22,28 +22,29 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4 sm:p-8">
-      <div className="w-full max-w-md sm:max-w-lg bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#090D16] p-4 sm:p-8 transition-colors">
+      <div className="w-full max-w-md sm:max-w-lg bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 dark:border-gray-800 space-y-6 transition-colors">
         {/* Logo Centralizada */}
         <div className="flex flex-col items-center text-center space-y-2">
           <div className="relative w-48 h-48 flex items-center justify-center mb-1">
-            <Image src="/Logo Sem fundo texto preto.png" alt="Beleza em Dia" width={192} height={192} className="w-full h-full object-contain" priority />
+            <Image src="/Logo Sem fundo texto preto.png" alt="Beleza em Dia" width={192} height={192} className="w-full h-full object-contain dark:hidden" priority />
+            <Image src="/Logo Sem fundo texto branco.png" alt="Beleza em Dia" width={192} height={192} className="w-full h-full object-contain hidden dark:block" priority />
           </div>
-          <h1 className="text-xl font-bold text-[#111827]">Crie sua conta profissional</h1>
-          <p className="text-xs text-gray-500">Gerencie sua agenda com elegância e eficiência.</p>
+          <h1 className="text-xl font-bold text-[#111827] dark:text-white">Crie sua conta profissional</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Gerencie sua agenda com elegância e eficiência.</p>
         </div>
 
         {/* Formulário */}
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Nome Completo</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Nome Completo</label>
             <div className="relative">
               <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-gray-200 bg-white text-sm text-[#111827] focus:ring-2 focus:ring-brand outline-none"
+                className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
                 placeholder="Maria da Silva"
                 required
               />
@@ -51,14 +52,14 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">E-mail</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">E-mail</label>
             <div className="relative">
               <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-gray-200 bg-white text-sm text-[#111827] focus:ring-2 focus:ring-brand outline-none"
+                className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
                 placeholder="seu@email.com"
                 required
               />
@@ -66,17 +67,25 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Senha</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Senha</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-gray-200 bg-white text-sm text-[#111827] focus:ring-2 focus:ring-brand outline-none"
+                className="w-full pl-10 pr-11 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
                 placeholder="••••••••"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                aria-label={showPassword ? 'Ocultar senha' : 'Ver senha'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -91,15 +100,15 @@ export default function SignupPage() {
 
         {/* Divisor ou continue com */}
         <div className="relative flex items-center justify-center my-4">
-          <div className="border-t border-gray-200 w-full" />
-          <span className="bg-white px-3 text-xs text-gray-400 absolute">ou continue com</span>
+          <div className="border-t border-gray-200 dark:border-gray-800 w-full" />
+          <span className="bg-white dark:bg-gray-900 px-3 text-xs text-gray-400 absolute">ou continue com</span>
         </div>
 
         {/* Botão Google */}
         <button
           type="button"
           onClick={() => router.push('/termos')}
-          className="w-full py-3 border border-gray-200 rounded-xl font-semibold text-xs text-[#111827] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 shadow-sm"
+          className="w-full py-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl font-semibold text-xs text-[#111827] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors flex items-center justify-center gap-2 shadow-sm"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -110,9 +119,9 @@ export default function SignupPage() {
           Continue with Google
         </button>
 
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-gray-500 dark:text-gray-400">
           Já tem uma conta?{' '}
-          <Link href="/login" className="font-bold text-[#111827] hover:text-brand transition-colors">
+          <Link href="/login" className="font-bold text-[#111827] dark:text-white hover:text-brand transition-colors">
             Entrar
           </Link>
         </p>

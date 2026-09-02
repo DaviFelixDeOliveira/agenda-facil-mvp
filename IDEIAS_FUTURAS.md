@@ -31,3 +31,24 @@ Permitir que o profissional exporte seus relatórios financeiros em formatos pro
 - Filtros por intervalo de datas, tipo (receita/despesa) e categoria antes de exportar.
 
 ### Benefício: facilitar o controle financeiro, a prestação de contas e o envio ao contador.
+
+---
+
+## 3. Comunicação e Notificações Avançadas
+
+### 3.1 Disparo Automático via WhatsApp API (Oficial / Z-API)
+- Envio automático de confirmação de agendamento e comprovante do Pix no WhatsApp da cliente assim que o pagamento for aprovado, sem exigir o clique manual da profissional.
+
+### 3.2 Lembretes de Atendimento Automáticos (24h e 2h antes)
+- Disparo automatizado no WhatsApp da cliente com botões interativos de [Confirmar Presença] ou [Solicitar Reagendamento], reduzindo o índice de faltas (no-show).
+
+### 3.3 Notificações Push no Navegador / PWA
+- Alertas sonoros e pop-ups diretos no celular/computador da profissional em tempo real quando uma nova cliente agendar ou cancelar.
+
+### 3.4 Relatórios Periódicos Automáticos por E-mail/WhatsApp
+- Envio semanal e mensal de um resumo executivo com métricas do negócio (faturamento total, quantidade de atendimentos e clientes sumidas) diretamente no WhatsApp da profissional.
+
+---
+
+## 4. Segurança Avançada: Autenticação em Duas Etapas (2FA via OTP)
+- Permitir ativação de verificação em duas etapas via aplicativo autenticador (Google Authenticator / Authy) ou código SMS/WhatsApp para logins com e-mail e senha.

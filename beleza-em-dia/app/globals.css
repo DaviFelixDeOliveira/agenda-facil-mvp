@@ -84,9 +84,19 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  input, select, textarea {
+    color: inherit;
+  }
+  select option {
+    background-color: #FFFFFF;
+    color: #111827;
+  }
+  .dark select option {
+    background-color: #1F2937;
+    color: #F9FAFB;
+  }
   ::selection {
-    background-color: rgba(225, 29, 72, 0.15);
-    color: hsl(var(--foreground));
+    background-color: rgba(225, 29, 72, 0.2);
   }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background-color: transparent; }

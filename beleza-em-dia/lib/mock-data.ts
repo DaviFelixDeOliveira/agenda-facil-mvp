@@ -11,7 +11,6 @@ export const mockProfessional = {
   id: '',
   name: '',
   studioName: '',
-  specialty: '',
   email: '',
   phone: '',
   phoneFormatted: '',
