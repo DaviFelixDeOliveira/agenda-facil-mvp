@@ -1,6 +1,7 @@
 'use client'
 
 import { StatusBadge } from '@/components/ui/status-badge'
+import { useState } from 'react'
 import { brl, initials } from '@/lib/utils'
 import {
   CalendarDays,
@@ -12,6 +13,8 @@ import {
 } from 'lucide-react'
 import type { MockAppointment } from '@/lib/mock-data'
 import { useModalManager } from '@/context/modal-manager'
+import { useMockStore } from '@/context/mock-store'
+import { toast } from 'sonner'
 
 function WhatsAppIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
@@ -28,6 +31,13 @@ interface AppointmentModalProps {
 
 export function AppointmentModal({ professionalStudioName, onClose }: AppointmentModalProps) {
   const { close, getData, isOpen } = useModalManager()
+  const { updateAppointment, addTransaction } = useMockStore()
+  const [showReschedule, setShowReschedule] = useState(false)
+  const [newDate, setNewDate] = useState('')
+  const [newTime, setNewTime] = useState('')
+  const [confirmation, setConfirmation] = useState<'signal' | 'complete' | 'cancel' | null>(null)
+  const [cancelReason, setCancelReason] = useState('')
+  const [notifyCancellation, setNotifyCancellation] = useState(true)
   const selectedAppt = getData<MockAppointment>('appointment')
 
   if (!isOpen('appointment') || !selectedAppt) return null
@@ -38,6 +48,50 @@ export function AppointmentModal({ professionalStudioName, onClose }: Appointmen
   }
 
   const formatPhone = (phone: string) => phone.replace(/(\d{2})(\d{5})(\d{4})/g, '($1) $2-$3')
+  const whatsappMessage = selectedAppt.status === 'cancelado'
+    ? `Olá ${selectedAppt.clientName.split(' ')[0]}, seu agendamento de ${selectedAppt.serviceName} foi cancelado. Motivo: ${selectedAppt.motivoCancelamento || 'indisponibilidade da agenda'}.`
+    : `Olá ${selectedAppt.clientName.split(' ')[0]}! Seu agendamento de ${selectedAppt.serviceName} está confirmado para ${selectedAppt.date.split('-').reverse().join('/')} às ${selectedAppt.time}. Te espero! ✨ — ${professionalStudioName}`
+
+  const confirmSignal = () => {
+    updateAppointment(selectedAppt.id, { signalPaid: true, status: 'confirmado' })
+    toast.success('Sinal confirmado e agendamento atualizado.')
+    handleClose()
+  }
+
+  const completeAppointment = () => {
+    if (selectedAppt.status === 'finalizado') return
+    updateAppointment(selectedAppt.id, { status: 'finalizado' })
+    const remaining = Math.max(0, selectedAppt.price - (selectedAppt.signalPaid ? selectedAppt.signalAmount : 0))
+    if (remaining > 0) {
+      addTransaction({
+        id: `tx_${Date.now()}`,
+        date: 'Hoje, agora',
+        clientName: selectedAppt.clientName,
+        serviceName: selectedAppt.serviceName,
+        amount: remaining,
+        method: 'PIX',
+        type: 'servico',
+      })
+    }
+    toast.success('Atendimento concluído e saldo lançado no financeiro.')
+    handleClose()
+  }
+
+  const cancelAppointment = () => {
+    if (!cancelReason.trim()) return
+    updateAppointment(selectedAppt.id, { status: 'cancelado', motivoCancelamento: cancelReason.trim() })
+    toast.success('Agendamento cancelado.')
+    handleClose()
+  }
+
+  const reschedule = (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!newDate || !newTime) return
+    updateAppointment(selectedAppt.id, { date: newDate, time: newTime, status: 'confirmado' })
+    toast.success('Agendamento remarcado com sucesso.')
+    setShowReschedule(false)
+    handleClose()
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-end lg:items-center justify-center p-4" onClick={handleClose}>
@@ -56,9 +110,13 @@ export function AppointmentModal({ professionalStudioName, onClose }: Appointmen
           {/* Status + sinal */}
           <div className="flex items-center justify-between">
             <StatusBadge status={selectedAppt.status} />
-            {selectedAppt.signalPaid && (
+            {selectedAppt.signalPaid ? (
               <span className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full font-medium border border-emerald-200 dark:border-emerald-800">
                 ✓ Sinal pago ({brl(selectedAppt.signalAmount)})
+              </span>
+            ) : (
+              <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 rounded-full font-medium border border-amber-200 dark:border-amber-800">
+                Sinal pendente ({brl(selectedAppt.signalAmount)})
               </span>
             )}
           </div>
@@ -97,7 +155,7 @@ export function AppointmentModal({ professionalStudioName, onClose }: Appointmen
 
           {/* Botão WhatsApp */}
           <a
-            href={`https://wa.me/55${selectedAppt.clientPhone}?text=${encodeURIComponent(`Olá ${selectedAppt.clientName.split(' ')[0]}! Seu agendamento de ${selectedAppt.serviceName} está confirmado para ${selectedAppt.date.split('-').reverse().join('/')} às ${selectedAppt.time}. Te espero! ✨ — ${professionalStudioName}`)}`}
+            href={`https://wa.me/55${selectedAppt.clientPhone}?text=${encodeURIComponent(whatsappMessage)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm"
@@ -107,17 +165,40 @@ export function AppointmentModal({ professionalStudioName, onClose }: Appointmen
           </a>
 
           {/* Ações */}
+          {selectedAppt.status === 'cancelado' && selectedAppt.motivoCancelamento && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+              <p className="font-bold">Motivo do cancelamento</p>
+              <p className="mt-1">{selectedAppt.motivoCancelamento}</p>
+            </div>
+          )}
+
+          {selectedAppt.status === 'finalizado' && (
+            <p className="flex items-center justify-center gap-2 rounded-xl bg-emerald-50 py-3 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+              <CheckCircle2 className="h-4 w-4" /> Atendimento concluído
+            </p>
+          )}
+
+          {selectedAppt.status === 'pendente' && !selectedAppt.signalPaid && (
+            <button onClick={() => setConfirmation('signal')} className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 rounded-xl font-semibold text-sm hover:bg-amber-100 transition-colors">
+              <CheckCircle2 className="w-4 h-4" /> Confirmar Sinal
+            </button>
+          )}
+
           {selectedAppt.status !== 'finalizado' && selectedAppt.status !== 'cancelado' && (
             <div className="flex gap-3">
               <button
-                onClick={handleClose}
+                onClick={() => setConfirmation('complete')}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-xl font-medium text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 Concluído
               </button>
               <button
-                onClick={handleClose}
+                onClick={() => {
+                  setNewDate(selectedAppt.date)
+                  setNewTime(selectedAppt.time)
+                  setShowReschedule(true)
+                }}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded-xl font-medium text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
               >
                 <CalendarClock className="w-4 h-4" />
@@ -125,13 +206,49 @@ export function AppointmentModal({ professionalStudioName, onClose }: Appointmen
               </button>
             </div>
           )}
-          <button
-            onClick={handleClose}
-            className="w-full text-center text-sm text-red-500 hover:text-red-700 font-medium py-2 transition-colors"
-          >
-            <XCircle className="w-4 h-4 inline mr-1" />
-            Cancelar Agendamento
-          </button>
+          {selectedAppt.status !== 'finalizado' && selectedAppt.status !== 'cancelado' && (
+            <button onClick={() => setConfirmation('cancel')} className="w-full text-center text-sm text-red-500 hover:text-red-700 font-medium py-2 transition-colors">
+              <XCircle className="w-4 h-4 inline mr-1" /> Cancelar Agendamento
+            </button>
+          )}
+
+          {showReschedule && (
+            <form onSubmit={reschedule} className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
+              <p className="text-sm font-bold">Escolha o novo horário</p>
+              <div className="grid grid-cols-2 gap-3">
+                <input required type="date" value={newDate} onChange={(event) => setNewDate(event.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm" />
+                <input required type="time" value={newTime} onChange={(event) => setNewTime(event.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm" />
+              </div>
+              <button type="submit" className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-white">Salvar novo horário</button>
+            </form>
+          )}
+
+          {confirmation && (
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4" onClick={() => setConfirmation(null)}>
+              <div className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-5 shadow-2xl dark:bg-gray-900" onClick={(event) => event.stopPropagation()}>
+                <h4 className="text-base font-bold text-[#111827] dark:text-white">
+                  {confirmation === 'cancel' ? 'Cancelar agendamento' : 'Confirmar ação'}
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {confirmation === 'cancel' ? 'Tem certeza que deseja cancelar? Informe o motivo.' : confirmation === 'complete' ? 'Tem certeza que deseja marcar este atendimento como concluído e lançar o saldo no financeiro?' : 'Tem certeza que deseja confirmar o recebimento do sinal?'}
+                </p>
+                {confirmation === 'cancel' && (
+                  <>
+                    <textarea required autoFocus value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} placeholder="Motivo do cancelamento" className="min-h-20 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
+                    <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300"><input type="checkbox" checked={notifyCancellation} onChange={(event) => setNotifyCancellation(event.target.checked)} /> Enviar mensagem automática pelo WhatsApp</label>
+                  </>
+                )}
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setConfirmation(null)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold dark:border-gray-700">Voltar</button>
+                  {confirmation === 'cancel' && notifyCancellation ? (
+                    <button type="button" onClick={() => { if (!cancelReason.trim()) return; cancelAppointment(); window.open(`https://wa.me/55${selectedAppt.clientPhone}?text=${encodeURIComponent(`Olá ${selectedAppt.clientName.split(' ')[0]}, seu agendamento de ${selectedAppt.serviceName} foi cancelado. Motivo: ${cancelReason.trim()}`)}`, '_blank', 'noopener,noreferrer') }} className="flex-1 rounded-xl bg-red-600 py-2.5 text-center text-sm font-bold text-white">Cancelar e avisar</button>
+                  ) : (
+                    <button type="button" onClick={() => { if (confirmation === 'signal') confirmSignal(); else if (confirmation === 'complete') completeAppointment(); else cancelAppointment() }} className="flex-1 rounded-xl bg-brand py-2.5 text-sm font-bold text-white">Confirmar</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

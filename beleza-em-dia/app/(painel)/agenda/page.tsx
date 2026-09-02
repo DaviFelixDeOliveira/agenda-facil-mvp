@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useMockStore } from '@/context/mock-store'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { brl, initials } from '@/lib/utils'
@@ -44,6 +45,7 @@ const statusBarColor: Record<string, string> = {
 export default function AgendaPage() {
   const { appointments, professional } = useMockStore()
   const { open } = useModalManager()
+  const router = useRouter()
   const [baseDate, setBaseDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(toDateStr(new Date()))
 
@@ -60,11 +62,13 @@ export default function AgendaPage() {
     const d = new Date(baseDate)
     d.setDate(d.getDate() - 7)
     setBaseDate(d)
+    setSelectedDate(toDateStr(d))
   }
   const nextWeek = () => {
     const d = new Date(baseDate)
     d.setDate(d.getDate() + 7)
     setBaseDate(d)
+    setSelectedDate(toDateStr(d))
   }
 
   const handleWheel = (e: React.WheelEvent) => {
@@ -184,7 +188,7 @@ export default function AgendaPage() {
                   {/* Divisor */}
                   <div className="w-px h-10 bg-gray-100 dark:bg-gray-800" />
                   {/* Avatar + info */}
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5" onClick={(event) => { event.stopPropagation(); if (a.clientId) router.push(`/clientes?cliente=${a.clientId}`) }}>
                     <div className="w-9 h-9 rounded-full bg-rose-50 dark:bg-rose-950/50 text-brand text-xs font-bold flex items-center justify-center shrink-0">
                       {initials(a.clientName)}
                     </div>

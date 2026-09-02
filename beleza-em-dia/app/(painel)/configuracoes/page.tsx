@@ -37,8 +37,13 @@ import {
   Eye,
   EyeOff,
   Lock,
+  Edit3,
+  Plus,
+  X,
 } from 'lucide-react'
 import { LogoutModal } from '@/components/logout-modal'
+import type { MockService } from '@/lib/mock-data'
+import { ServicoModal } from '@/components/modals/servico-modal'
 
 function WhatsAppIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
@@ -76,14 +81,16 @@ type ConfigSection =
   | 'menu'
   | 'negocio'
   | 'agenda'
+  | 'pagamento'
   | 'pagamentos'
   | 'local'
   | 'notificacoes'
+  | 'compartilhamento'
   | 'seguranca'
   | 'aparencia'
 
 export default function ConfiguracoesPage() {
-  const { professional, schedule, updateProfessional } = useMockStore()
+  const { professional, schedule, services, updateProfessional, updateService, addService, removeService } = useMockStore()
   const { theme, setTheme } = useTheme()
   const [showLogout, setShowLogout] = useState(false)
   const [showDeleteAccount, setShowDeleteAccount] = useState(false)
@@ -98,6 +105,8 @@ export default function ConfiguracoesPage() {
   const [cnpj, setCnpj] = useState(professional.cnpj)
   const [instagram, setInstagram] = useState('@studiobianails')
   const [bio, setBio] = useState(professional.bio)
+  const [editingService, setEditingService] = useState<MockService | null>(null)
+  const [showServiceModal, setShowServiceModal] = useState(false)
 
   // --- 2. Regras de Agenda ---
   const [agendaType, setAgendaType] = useState<'fixa' | 'livre'>('fixa')
@@ -203,6 +212,22 @@ export default function ConfiguracoesPage() {
       description: 'As alterações foram sincronizadas no painel.',
     })
     setHasChanges(false)
+  }
+
+  const openServiceEditor = (service?: MockService) => {
+    setEditingService(service || null)
+    setShowServiceModal(true)
+  }
+
+  const saveService = (data: Pick<MockService, 'name' | 'category' | 'price' | 'duration' | 'active'>) => {
+    if (editingService) {
+      updateService(editingService.id, data)
+    } else {
+      addService({ id: `svc_${Date.now()}`, icon: 'Sparkles', ...data })
+    }
+    setEditingService(null)
+    setShowServiceModal(false)
+    toast.success(`Serviço ${editingService ? 'atualizado' : 'adicionado'} com sucesso!`)
   }
 
   const handleCopy = () => {
@@ -522,6 +547,93 @@ export default function ConfiguracoesPage() {
               placeholder="Conte um pouco sobre sua experiência e diferenciais..."
             />
           </div>
+
+          {/* Serviços Oferecidos */}
+          <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Serviços Oferecidos</p>
+              <span className="text-[10px] text-gray-400 font-medium">{services.filter(s => s.active).length} ativo(s) de {services.length}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => openServiceEditor()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand text-white text-xs font-bold hover:bg-rose-700 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> Adicionar serviço
+            </button>
+
+            {services.length === 0 ? (
+              <div className="text-center py-6">
+                <Sparkles className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum serviço cadastrado ainda.</p>
+                <p className="text-xs text-gray-400">Adicione seus serviços para que os clientes possam agendá-los.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {services.map(svc => (
+                  <div
+                    key={svc.id}
+                    className={`flex items-center justify-between py-3 px-4 rounded-xl border transition-colors ${
+                      svc.active
+                        ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-100/60 dark:border-gray-700'
+                        : 'bg-gray-100/50 dark:bg-gray-800/30 border-gray-200/40 dark:border-gray-700/40 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                        svc.active
+                          ? 'bg-rose-50 dark:bg-rose-950/50 text-brand'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+                      }`}>
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[#111827] dark:text-white truncate">{svc.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {svc.duration}min · R$ {svc.price.toFixed(2).replace('.', ',')} · {svc.category}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                        svc.active
+                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                      }`}>
+                        {svc.active ? 'Ativo' : 'Inativo'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openServiceEditor(svc)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-brand hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        title="Editar serviço"
+                        aria-label={`Editar ${svc.name}`}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeService(svc.id)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                        title="Remover serviço"
+                        aria-label={`Remover ${svc.name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </div>
+
+          <ServicoModal
+            isOpen={showServiceModal}
+            service={editingService}
+            onClose={() => { setEditingService(null); setShowServiceModal(false) }}
+            onSave={saveService}
+          />
 
           {/* Botões de Ação */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">

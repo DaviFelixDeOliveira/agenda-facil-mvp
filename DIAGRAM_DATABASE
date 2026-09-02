@@ -81,7 +81,7 @@ Regra: maintenanceEnabled bloqueia operações críticas em todo o sistema. A ro
 Visualização dos Campos (services)
 _id (string): Identificador único gerado automaticamente pelo banco de dados.
 
-tenantId (string | Chave Estrangeira): Identificador da profissional/salão proprietário (vinculado à tabela tenants).
+userId (string | Chave Estrangeira): Identificador do usuário/proprietário (vinculado à tabela users).
 
 nome (string): Nome do procedimento. Originado do template predefinido ou criado/editado do zero pela profissional (ex: "Manicure Simples", "Alongamento em Fibra de Vidro").
 
@@ -110,7 +110,7 @@ ordemExibicao (number): Posição numérica para ordenação da lista de exibiç
 Visualização dos Campos (availability)
 _id (string): Identificador único do registro gerado pelo banco.
 
-tenantId (string | Chave Estrangeira): Identificador da profissional proprietária da agenda (vinculado à tabela tenants).
+userId (string | Chave Estrangeira): Identificador do usuário proprietário da agenda (vinculado à tabela users).
 
 tipo (enum):
 
@@ -152,9 +152,11 @@ origem (enum): "padrao" | "manual" | "sistema". Identifica se a disponibilidade 
 Visualização dos Campos (appointments)
 _id (string): Identificador único do agendamento gerado automaticamente pelo banco de dados.
 
-tenantId (string | Chave Estrangeira): Identificador da profissional/salão onde a vaga foi reservada (vinculado à tabela tenants).
+userId (string | Chave Estrangeira): Identificador do usuário/salão onde a vaga foi reservada (vinculado à tabela users).
 
 serviceId (string | Chave Estrangeira): Identificador do procedimento contratado (vinculado à tabela services).
+
+clientId (string | Opcional | Chave Estrangeira): Identificador da cliente vinculada (vinculado à tabela clients). Pode ser nulo em registros legados ou reservas sem cliente cadastrada.
 
 clienteNome (string): Nome completo da cliente que fez o agendamento.
 
@@ -253,11 +255,34 @@ webhookEventId (string | Único | Opcional): Identificador do evento processado 
 
 ---
 
+Visualização dos Campos (clients / clientes)
+_id (string): Identificador único do cliente gerado automaticamente pelo banco de dados.
+
+userId (string | Chave Estrangeira): Identificador do usuário/salão proprietário (vinculado à tabela users).
+
+nome (string): Nome completo da cliente cadastrada.
+
+whatsapp (string | Opcional): Telefone e WhatsApp com DDD (ex: "(11) 98888-7777").
+
+email (string | Opcional): E-mail de contato da cliente.
+
+notas_internas (string / TEXT | Opcional / Nullable): Anotações internas e confidenciais registradas pela profissional sobre a cliente (preferências de esmalte, histórico de alergias, sensibilidade de cutícula, formatos favoritos, observações de atendimento). Campo do tipo TEXT sem limitação rígida de caracteres.
+
+totalVisitas (number): Quantidade total de atendimentos realizados pela cliente (padrão: 0).
+
+ticketMedio (number): Valor médio em reais gasto pela cliente por visita (padrão: 0.00).
+
+ultimaVisita (string | ISO Timestamp | Opcional): Data e horário do último agendamento finalizado.
+
+criadoEm (string | ISO Timestamp): Data de cadastro da cliente no sistema.
+
+---
+
 
 Visualização dos Campos (portfolio_media)
 _id (string): Identificador único da mídia gerado pelo banco.
 
-tenantId (string | Chave Estrangeira): Identificador da profissional proprietária do arquivo (vinculado à tabela tenants).
+userId (string | Chave Estrangeira): Identificador do usuário proprietário do arquivo (vinculado à tabela users).
 
 tipo (enum): "foto" | "video".
 
@@ -289,7 +314,7 @@ Visualização dos Campos (financial_events)
 
 _id (string): Identificador único do evento financeiro.
 
-tenantId (string | Chave Estrangeira): Profissional ou salão proprietário.
+userId (string | Chave Estrangeira): Usuário ou salão proprietário.
 
 appointmentId (string | Opcional | Chave Estrangeira): Agendamento relacionado, quando aplicável.
 

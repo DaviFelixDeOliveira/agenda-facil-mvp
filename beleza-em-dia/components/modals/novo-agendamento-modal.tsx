@@ -21,9 +21,10 @@ interface Props {
   services: Service[]
   clients?: Client[]
   apptId?: string | null
+  initialClient?: Client | null
 }
 
-export function NovoAgendamentoModal({ open = true, onClose, onSave, services }: Props) {
+export function NovoAgendamentoModal({ open = true, onClose, onSave, services, initialClient }: Props) {
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
   const [serviceId, setServiceId] = useState('')
@@ -46,8 +47,8 @@ export function NovoAgendamentoModal({ open = true, onClose, onSave, services }:
 
   useEffect(() => {
     if (open) {
-      setClientName('')
-      setClientPhone('')
+      setClientName(initialClient?.name || '')
+      setClientPhone(initialClient?.phoneFormatted || initialClient?.phone || '')
       setServiceId('')
       setDate('')
       setTime('')

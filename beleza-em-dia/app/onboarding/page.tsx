@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -21,6 +21,8 @@ import {
   X,
   Info,
 } from 'lucide-react'
+import { useMockStore } from '@/context/mock-store'
+import { validateServiceName, validateRequiredText } from '@/lib/validation'
 
 type TimeBlock = {
   start: string
@@ -38,13 +40,41 @@ type DayConfig = {
 
 export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1)
+  const [isSaving, setIsSaving] = useState(false)
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const { upsertService } = useMockStore()
 
   // Passo 1: Perfil
   const [studioName, setStudioName] = useState('Studio Bela Face')
+  const [studioNameError, setStudioNameError] = useState('')
   const [bio, setBio] = useState('')
   const [domicilio, setDomicilio] = useState(false)
+  const [avatar, setAvatar] = useState('')
+  const [avatarDragActive, setAvatarDragActive] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const savedAvatar = localStorage.getItem('beleza-em-dia-onboarding-avatar')
+    if (savedAvatar) setAvatar(savedAvatar)
+    fetch('/api/profile')
+      .then((response) => response.ok ? response.json() : null)
+      .then((profile) => {
+        if (!savedAvatar && (profile?.image || profile?.googleImage)) setAvatar(profile.image || profile.googleImage)
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleAvatarFile = (file: File | undefined) => {
+    if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const value = String(reader.result)
+      setAvatar(value)
+      localStorage.setItem('beleza-em-dia-onboarding-avatar', value)
+    }
+    reader.readAsDataURL(file)
+  }
 
   // Passo 2: Agenda
   const [agendaType, setAgendaType] = useState<'fixa' | 'flexivel' | null>(null)
@@ -112,20 +142,149 @@ export default function OnboardingPage() {
   ])
 
   // Passo 3: Serviços
+  const defaultCategories = ['Unhas', 'Cabelos', 'Sobrancelhas e Cílios', 'Depilação e Estética', 'Maquiagem']
+  const [categories, setCategories] = useState(defaultCategories)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [newCategory, setNewCategory] = useState('')
   const [services, setServices] = useState([
-    { id: 1, name: 'Manicure', price: '35,00', duration: '45', checked: true },
-    { id: 2, name: 'Pedicure', price: '45,00', duration: '50', checked: false },
-    { id: 3, name: 'Design de Sobrancelhas', price: '45,00', duration: '30', checked: false },
+    { id: 1, category: 'Unhas', name: 'Manicure Simples', description: '', price: '35,00', duration: '45', checked: false },
+    { id: 2, category: 'Unhas', name: 'Pedicure Tradicional', description: '', price: '40,00', duration: '45', checked: false },
+    { id: 3, category: 'Unhas', name: 'Combo Manicure + Pedicure', description: '', price: '70,00', duration: '90', checked: false },
+    { id: 4, category: 'Unhas', name: 'Alongamento em Fibra de Vidro', description: '', price: '150,00', duration: '120', checked: false },
+    { id: 5, category: 'Unhas', name: 'Manutenção de Alongamento', description: '', price: '90,00', duration: '90', checked: false },
+    { id: 6, category: 'Unhas', name: 'Esmaltação em Gel', description: '', price: '60,00', duration: '50', checked: false },
+    { id: 7, category: 'Unhas', name: 'Banho de Gel', description: '', price: '80,00', duration: '60', checked: false },
+    { id: 8, category: 'Cabelos', name: 'Corte Feminino + Escova', description: '', price: '90,00', duration: '60', checked: false },
+    { id: 9, category: 'Cabelos', name: 'Escova Modelada', description: '', price: '50,00', duration: '45', checked: false },
+    { id: 10, category: 'Cabelos', name: 'Hidratação Profunda + Escova', description: '', price: '100,00', duration: '60', checked: false },
+    { id: 11, category: 'Cabelos', name: 'Nutrição / Reconstrução Capilar', description: '', price: '130,00', duration: '75', checked: false },
+    { id: 12, category: 'Cabelos', name: 'Retoque de Raiz / Coloração', description: '', price: '120,00', duration: '90', checked: false },
+    { id: 13, category: 'Cabelos', name: 'Meias Luzes / Morena Iluminada', description: '', price: '280,00', duration: '180', checked: false },
+    { id: 14, category: 'Cabelos', name: 'Botox Capilar', description: '', price: '150,00', duration: '120', checked: false },
+    { id: 15, category: 'Sobrancelhas e Cílios', name: 'Design de Sobrancelhas Simples', description: '', price: '35,00', duration: '30', checked: false },
+    { id: 16, category: 'Sobrancelhas e Cílios', name: 'Design de Sobrancelhas com Henna', description: '', price: '55,00', duration: '45', checked: false },
+    { id: 17, category: 'Sobrancelhas e Cílios', name: 'Brow Lamination', description: '', price: '110,00', duration: '60', checked: false },
+    { id: 18, category: 'Sobrancelhas e Cílios', name: 'Extensão de Cílios - Fio a Fio', description: '', price: '140,00', duration: '120', checked: false },
+    { id: 19, category: 'Sobrancelhas e Cílios', name: 'Extensão de Cílios - Volume Russo', description: '', price: '180,00', duration: '150', checked: false },
+    { id: 20, category: 'Sobrancelhas e Cílios', name: 'Lash Lifting + Tintura', description: '', price: '120,00', duration: '60', checked: false },
+    { id: 21, category: 'Sobrancelhas e Cílios', name: 'Manutenção de Cílios', description: '', price: '90,00', duration: '90', checked: false },
+    { id: 22, category: 'Depilação e Estética', name: 'Depilação Buço / Rosto', description: '', price: '25,00', duration: '20', checked: false },
+    { id: 23, category: 'Depilação e Estética', name: 'Depilação Axilas', description: '', price: '30,00', duration: '20', checked: false },
+    { id: 24, category: 'Depilação e Estética', name: 'Depilação Meia Perna', description: '', price: '45,00', duration: '30', checked: false },
+    { id: 25, category: 'Depilação e Estética', name: 'Depilação Íntima / Virilha Completa', description: '', price: '65,00', duration: '40', checked: false },
+    { id: 26, category: 'Depilação e Estética', name: 'Limpeza de Pele Profunda', description: '', price: '130,00', duration: '75', checked: false },
+    { id: 27, category: 'Depilação e Estética', name: 'Drenagem Linfática Corporal', description: '', price: '100,00', duration: '60', checked: false },
+    { id: 28, category: 'Depilação e Estética', name: 'Massagem Relaxante', description: '', price: '110,00', duration: '60', checked: false },
+    { id: 29, category: 'Maquiagem', name: 'Maquiagem Social / Evento', description: '', price: '150,00', duration: '60', checked: false },
+    { id: 30, category: 'Maquiagem', name: 'Maquiagem Express / Casual', description: '', price: '90,00', duration: '40', checked: false },
+    { id: 31, category: 'Maquiagem', name: 'Maquiagem para Noiva / Pré-Wedding', description: '', price: '300,00', duration: '90', checked: false },
+    { id: 32, category: 'Maquiagem', name: 'Aplicação de Cílios Postiços', description: '', price: '30,00', duration: '15', checked: false },
   ])
+  const [serviceErrorId, setServiceErrorId] = useState<number | null>(null)
+  const [serviceError, setServiceError] = useState('')
+  const serviceRefs = useRef<Record<number, HTMLInputElement | null>>({})
+  const categoryRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    const draft = localStorage.getItem('beleza-em-dia-onboarding-services')
+    if (!draft) return
+    try {
+      const parsed = JSON.parse(draft)
+      if (Array.isArray(parsed)) setServices(parsed)
+    } catch {
+      localStorage.removeItem('beleza-em-dia-onboarding-services')
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('beleza-em-dia-onboarding-services', JSON.stringify(services))
+  }, [services])
+
+  const addOnboardingService = () => {
+    setServices((prev) => [...prev, { id: Date.now(), category: selectedCategories[0] || 'Outra', name: 'Novo serviço', description: '', price: '0,00', duration: '30', checked: true }])
+  }
+
+  const saveSelectedServices = () => {
+    services.filter((service) => service.checked && selectedCategories.includes(service.category) && service.name.trim()).forEach((service) => {
+      upsertService({
+        id: `onboarding-${service.id}`,
+        name: service.name.trim(),
+        category: service.category.trim(),
+        description: service.description.trim() || undefined,
+        price: Number(service.price.replace(',', '.')) || 0,
+        duration: Number(service.duration),
+        icon: 'Sparkles',
+        active: true,
+      })
+    })
+  }
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories((prev) => prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category])
+  }
+
+  const addCategory = () => {
+    const value = newCategory.trim()
+    if (!value || categories.includes(value)) return
+    setCategories((prev) => [...prev, value])
+    setSelectedCategories((prev) => [...prev, value])
+    setNewCategory('')
+  }
 
   // Passo 4: Tema
   const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'system'>(
-    (theme as 'light' | 'dark' | 'system') || 'light'
+    (theme as 'light' | 'dark' | 'system') || 'system'
   )
 
   const handleSelectTheme = (mode: 'light' | 'dark' | 'system') => {
     setSelectedTheme(mode)
     setTheme(mode)
+  }
+
+  const finishOnboarding = () => {
+    setIsSaving(true)
+    window.setTimeout(() => {
+      setIsSaving(false)
+      setStep(5)
+    }, 900)
+  }
+
+  const goToAgenda = () => {
+    const error = validateRequiredText(studioName, 'O nome do estúdio ou salão')
+    if (error) {
+      setStudioNameError(error)
+      return
+    }
+    setStudioNameError('')
+    setStep(2)
+  }
+
+  const continueFromServices = () => {
+    const selected = services.filter((service) => service.checked && selectedCategories.includes(service.category))
+    if (selected.length === 0) {
+      setServiceErrorId(-1)
+      setServiceError('Selecione pelo menos um serviço para continuar.')
+      window.setTimeout(() => {
+        categoryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        categoryRef.current?.focus({ preventScroll: true })
+      }, 0)
+      return
+    }
+    const invalid = selected.find((service) => validateServiceName(service.name) || !Number.isInteger(Number(service.duration)) || Number(service.duration) <= 0 || Number(service.price.replace(',', '.')) < 0)
+    if (invalid) {
+      setServiceErrorId(invalid.id)
+      setServiceError(validateServiceName(invalid.name) || 'Informe preço válido e duração inteira maior que zero.')
+      window.setTimeout(() => {
+        const field = serviceRefs.current[invalid.id]
+        field?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        field?.focus({ preventScroll: true })
+      }, 0)
+      return
+    }
+    setServiceErrorId(null)
+    setServiceError('')
+    saveSelectedServices()
+    setStep(4)
   }
 
   const handleAddSlot = (dayIdx: number) => {
@@ -196,15 +355,21 @@ export default function OnboardingPage() {
             </div>
 
             {/* Upload de Foto */}
-            <div className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/40">
-              <div className="w-20 h-20 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center relative shadow-sm mb-2">
-                <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-brand text-white rounded-full flex items-center justify-center shadow">
-                  <Plus className="w-3.5 h-3.5" />
-                </div>
+            <div
+              onDragOver={(event) => { event.preventDefault(); setAvatarDragActive(true) }}
+              onDragLeave={() => setAvatarDragActive(false)}
+              onDrop={(event) => { event.preventDefault(); setAvatarDragActive(false); handleAvatarFile(event.dataTransfer.files[0]) }}
+              onClick={() => avatarInputRef.current?.click()}
+              className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed cursor-pointer transition-colors ${avatarDragActive ? 'border-brand bg-rose-50 dark:bg-rose-950/30' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/40'}`}
+            >
+              <div className="w-20 h-20 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center relative shadow-sm mb-2 overflow-hidden">
+                {avatar ? <Image src={avatar} alt="Foto de perfil" fill unoptimized className="object-cover" /> : <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500" />}
+                {!avatar && <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-brand text-white rounded-full flex items-center justify-center shadow"><Plus className="w-3.5 h-3.5" /></div>}
               </div>
-              <p className="text-xs font-bold text-brand">Adicionar Foto</p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500">Recomendado: 500×500px</p>
+              <input ref={avatarInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(event) => handleAvatarFile(event.target.files?.[0])} />
+              <p className="text-xs font-bold text-brand">{avatar ? 'Trocar Foto' : 'Adicionar Foto'}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">Arraste ou selecione JPG, PNG ou WEBP</p>
+              {avatar && <button type="button" onClick={(event) => { event.stopPropagation(); setAvatar(''); localStorage.removeItem('beleza-em-dia-onboarding-avatar') }} className="mt-2 text-[10px] font-bold text-red-500 hover:text-red-700">Remover foto</button>}
             </div>
 
             {/* Inputs */}
@@ -217,7 +382,9 @@ export default function OnboardingPage() {
                   onChange={(e) => setStudioName(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-brand outline-none"
                   placeholder="Ex: Studio Bela Face"
+                  required
                 />
+                {studioNameError && <p className="mt-1 text-xs font-semibold text-red-600">{studioNameError}</p>}
               </div>
 
               <div>
@@ -261,7 +428,7 @@ export default function OnboardingPage() {
             </div>
 
             <button
-              onClick={() => setStep(2)}
+              onClick={goToAgenda}
               className="w-full py-3.5 bg-brand text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-colors shadow-sm flex items-center justify-center gap-2"
             >
               Próximo Passo <ArrowRight className="w-4 h-4" />
@@ -379,7 +546,8 @@ export default function OnboardingPage() {
             )}
 
             {/* Lista dos dias da semana */}
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+            {!agendaType && <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300">Agenda vazia. Selecione Agenda Fixa ou Agenda Flexível para configurar dias e horários.</div>}
+            <div className={`space-y-3 max-h-80 overflow-y-auto pr-1 ${!agendaType ? 'hidden' : ''}`}>
               {days.map((day, idx) => (
                 <div key={day.name} className="p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800/70 shadow-sm space-y-3">
                   <div className="flex items-center justify-between">
@@ -403,7 +571,7 @@ export default function OnboardingPage() {
                     </button>
                   </div>
 
-                  {day.active ? (
+                  {day.active && agendaType ? (
                     <div className="space-y-3 pt-1 border-t border-gray-50 dark:border-gray-700/60">
                       {/* === MODO AGENDA FIXA === */}
                       {agendaType === 'fixa' && (
@@ -709,7 +877,7 @@ export default function OnboardingPage() {
                       )}
                     </div>
                   ) : (
-                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 italic">Fechado / Folga</span>
+                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 italic">{day.active ? 'Escolha um tipo de agenda para configurar os horários' : 'Fechado / Folga'}</span>
                   )}
                 </div>
               ))}
@@ -744,7 +912,24 @@ export default function OnboardingPage() {
             </div>
 
             <div className="space-y-3">
-              {services.map((svc, idx) => (
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">A. Especialidades atendidas</p>
+              <div className="grid grid-cols-2 gap-2">
+                {categories.map((category) => (
+                  <button ref={categoryRef} key={category} type="button" onClick={() => toggleCategory(category)} className={`rounded-xl border p-3 text-left text-xs font-bold transition-colors ${selectedCategories.includes(category) ? 'border-brand bg-rose-50 text-brand dark:bg-rose-950/30' : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'}`}>
+                    {selectedCategories.includes(category) ? '✓ ' : ''}{category}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input value={newCategory} onChange={(event) => setNewCategory(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && addCategory()} placeholder="Outra categoria (ex: Podologia)" className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800" />
+                <button type="button" onClick={addCategory} className="rounded-xl border border-brand px-3 py-2 text-xs font-bold text-brand">+ Outra</button>
+              </div>
+            </div>
+
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">B. Sugestões de serviços</p>
+
+            <div className="space-y-3">
+              {services.filter((svc) => selectedCategories.includes(svc.category)).map((svc, idx) => (
                 <div
                   key={svc.id}
                   className={`p-4 rounded-2xl border transition-all ${
@@ -758,9 +943,7 @@ export default function OnboardingPage() {
                       type="checkbox"
                       checked={svc.checked}
                       onChange={(e) => {
-                        const updated = [...services]
-                        updated[idx].checked = e.target.checked
-                        setServices(updated)
+                        setServices((prev) => prev.map((item) => item.id === svc.id ? { ...item, checked: e.target.checked } : item))
                       }}
                       className="w-4 h-4 rounded accent-brand"
                     />
@@ -773,24 +956,41 @@ export default function OnboardingPage() {
                         <label className="block text-[10px] text-gray-700 dark:text-gray-300 uppercase font-bold mb-1">Nome do Serviço</label>
                         <input
                           type="text"
-                          defaultValue={svc.name}
+                          ref={(field) => { serviceRefs.current[svc.id] = field }}
+                          value={svc.name}
+                          onChange={(e) => setServices((prev) => prev.map((item) => item.id === svc.id ? { ...item, name: e.target.value } : item))}
                           className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand outline-none"
+                        />
+                      </div>
+                      {serviceErrorId === svc.id && <p className="text-xs font-semibold text-red-600 dark:text-red-400" role="alert">{serviceError}</p>}
+                      <div>
+                        <label className="block text-[10px] text-gray-700 dark:text-gray-300 uppercase font-bold mb-1">Observação / Descrição (opcional)</label>
+                        <textarea
+                          value={svc.description}
+                          onChange={(e) => setServices((prev) => prev.map((item) => item.id === svc.id ? { ...item, description: e.target.value } : item))}
+                          rows={2}
+                          placeholder="Adicione informações sobre este serviço"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand outline-none resize-none"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[10px] text-gray-700 dark:text-gray-300 uppercase font-bold mb-1">Preço (R$)</label>
-                          <input
-                            type="text"
-                            defaultValue={svc.price}
+                            <input
+                              type="text"
+                              value={svc.price}
+                              onChange={(e) => setServices((prev) => prev.map((item) => item.id === svc.id ? { ...item, price: e.target.value } : item))}
                             className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand outline-none"
                           />
                         </div>
                         <div>
                           <label className="block text-[10px] text-gray-700 dark:text-gray-300 uppercase font-bold mb-1">Duração (min)</label>
                           <input
-                            type="text"
-                            defaultValue={svc.duration}
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={svc.duration}
+                            onChange={(e) => setServices((prev) => prev.map((item) => item.id === svc.id ? { ...item, duration: e.target.value } : item))}
                             className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand outline-none"
                           />
                         </div>
@@ -802,10 +1002,28 @@ export default function OnboardingPage() {
 
               <button
                 type="button"
+                onClick={addOnboardingService}
                 className="w-full py-3.5 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-600 dark:text-gray-300 hover:border-brand hover:text-brand transition-colors flex items-center justify-center gap-1.5"
               >
                 <Plus className="w-4 h-4" /> Adicionar Novo Serviço
               </button>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-gray-200 bg-gray-50/70 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Revisão Final dos Serviços</p>
+                <span className="text-xs font-bold text-brand">{services.filter((service) => service.checked && service.name.trim()).length} cadastrados</span>
+              </div>
+              {Array.from(new Set(services.filter((service) => service.checked && service.name.trim()).map((service) => service.category))).map((category) => (
+                <div key={category}>
+                  <p className="text-sm font-bold text-[#111827] dark:text-white">{category}</p>
+                  <div className="mt-1 space-y-1">
+                    {services.filter((service) => service.checked && service.name.trim() && service.category === category).map((service) => (
+                      <p key={service.id} className="text-xs text-gray-600 dark:text-gray-300">{service.name} - R$ {service.price} - {service.duration} min</p>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="flex items-center justify-between gap-3 pt-2">
@@ -816,12 +1034,13 @@ export default function OnboardingPage() {
                 Voltar
               </button>
               <button
-                onClick={() => setStep(4)}
-                className="flex-1 py-3.5 bg-[#111827] dark:bg-white dark:text-[#111827] text-white rounded-xl font-bold text-sm hover:bg-black dark:hover:bg-gray-100 transition-colors shadow-sm flex items-center justify-center gap-2"
+                onClick={continueFromServices}
+                className="flex-1 py-3.5 bg-brand text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-colors shadow-sm flex items-center justify-center gap-2"
               >
-                Próximo <ArrowRight className="w-4 h-4" />
+                Próximo Passo <ArrowRight className="w-4 h-4" />
               </button>
             </div>
+            {serviceErrorId === -1 && <p className="text-xs font-semibold text-red-600 dark:text-red-400" role="alert">{serviceError}</p>}
           </div>
         )}
 
@@ -931,12 +1150,14 @@ export default function OnboardingPage() {
                 Voltar
               </button>
               <button
-                onClick={() => setStep(5)}
-                className="flex-1 py-3.5 bg-[#111827] dark:bg-white dark:text-[#111827] text-white rounded-xl font-bold text-sm hover:bg-black dark:hover:bg-gray-100 transition-colors shadow-sm flex items-center justify-center gap-2"
+                onClick={finishOnboarding}
+                className="flex-1 py-3.5 bg-brand text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-colors shadow-sm flex items-center justify-center gap-2"
+                disabled={isSaving}
               >
-                Concluir Configuração <ArrowRight className="w-4 h-4" />
+                {isSaving ? 'Salvando dados...' : 'Concluir Configuração'} <ArrowRight className="w-4 h-4" />
               </button>
             </div>
+            {isSaving && <div className="h-1.5 w-full overflow-hidden rounded-full bg-rose-100 dark:bg-rose-950/40"><div className="h-full w-1/2 animate-pulse rounded-full bg-brand" /></div>}
           </div>
         )}
 
@@ -945,7 +1166,7 @@ export default function OnboardingPage() {
            ======================================================== */}
         {step === 5 && (
           <div className="text-center space-y-6 animate-fade-in py-4">
-            <div className="w-20 h-20 rounded-3xl bg-brand text-white flex items-center justify-center mx-auto shadow-lg shadow-brand/20">
+            <div className="w-20 h-20 rounded-3xl bg-brand text-white flex items-center justify-center mx-auto shadow-lg shadow-brand/20 animate-pulse">
               <Check className="w-10 h-10" />
             </div>
 

@@ -48,6 +48,17 @@ export default function VerifyResetCodePage() {
     setEmail(storedEmail)
   }, [router])
 
+  useEffect(() => {
+    if (!email) return
+    const lockoutUntil = Number(localStorage.getItem(`otp_lockout_${email.trim().toLowerCase()}`) || 0)
+    const remaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000))
+    setLockoutSeconds(remaining)
+    if (remaining === 0) {
+      localStorage.removeItem(`otp_lockout_${email.trim().toLowerCase()}`)
+    }
+    setFailedAttempts(remaining > 0 ? 3 : 0)
+  }, [email])
+
   // Timer para o lockout de tentativas de código (5 minutos)
   useEffect(() => {
     let timer: NodeJS.Timeout
@@ -141,7 +152,9 @@ export default function VerifyResetCodePage() {
         setLoading(false)
 
         if (nextAttempts >= 3) {
-          setLockoutSeconds(300) // 5 minutos
+          const lockoutUntil = Date.now() + 300000
+          localStorage.setItem(`otp_lockout_${email.trim().toLowerCase()}`, String(lockoutUntil))
+          setLockoutSeconds(300)
           setErrorMessage('Você inseriu um código inválido 3 vezes. Por favor, aguarde 5 minutos para tentar novamente.')
           toast.error('Limite de 3 tentativas atingido. Aguarde 5 minutos.')
         } else {
@@ -163,6 +176,8 @@ export default function VerifyResetCodePage() {
       setLoading(false)
 
       if (nextAttempts >= 3) {
+        const lockoutUntil = Date.now() + 300000
+        localStorage.setItem(`otp_lockout_${email.trim().toLowerCase()}`, String(lockoutUntil))
         setLockoutSeconds(300)
         setErrorMessage('Você inseriu um código inválido 3 vezes. Por favor, aguarde 5 minutos para tentar novamente.')
       } else {
@@ -237,7 +252,17 @@ export default function VerifyResetCodePage() {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Enviamos um código de 6 dígitos para:
             </p>
-            <p className="text-xs font-bold text-brand mt-0.5">{maskEmail(email)}</p>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value)
+                setCode(['', '', '', '', '', ''])
+                setErrorMessage('')
+              }}
+              className="mt-1 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-center text-xs font-bold text-brand outline-none focus:ring-2 focus:ring-brand"
+              aria-label="E-mail para recuperação"
+            />
           </div>
         </div>
 

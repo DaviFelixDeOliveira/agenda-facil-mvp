@@ -21,6 +21,9 @@ model User {
     password      String? // hash bcrypt (nulo para contas OAuth/Google)
     image         String? // foto da empresa (upload próprio do profissional)
     googleImage   String? // foto vinda da conta Google (OAuth)
+    businessName  String?
+    businessPhone String?
+    businessAddress String?
     role          String    @default("professional")
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
@@ -86,90 +89,97 @@ model VerificationToken {
 // Cliente atendido pelo profissional.
 model Client {
     id             String        @id @default(cuid())
-    professionalId String
+    userId         String
     name           String
     phone          String?
     email          String?
+    visits         Int           @default(0)
+    avgTicket      Float         @default(0)
     notes          String?
+    motivoCancelamento String?
+    lastVisit      DateTime?
     createdAt      DateTime      @default(now())
-    professional   User          @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+    user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
     appointments   Appointment[]
 
-    @@index([professionalId])
+    @@index([userId])
 }
 
 // Serviço oferecido pelo profissional.
 model Service {
     id             String        @id @default(cuid())
-    professionalId String
+    userId         String
     name           String
     description    String?
     duration       Int // duração em minutos
     price          Float
     active         Boolean       @default(true)
     createdAt      DateTime      @default(now())
-    professional   User          @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+    user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
     appointments   Appointment[]
 
-    @@index([professionalId])
+    @@index([userId])
 }
 
 enum AppointmentStatus {
-    PENDING
-    CONFIRMED
-    CANCELLED
-    COMPLETED
+    pendente
+    confirmado
+    cancelado
+    finalizado
 }
 
 // Agendamento de um cliente para um serviço.
 model Appointment {
     id             String            @id @default(cuid())
-    professionalId String
-    clientId       String
+    userId         String
+    clientId       String?
     serviceId      String
-    date           DateTime // dia do agendamento
-    startTime      String // horário de início "HH:MM"
-    endTime        String // horário de término "HH:MM"
-    status         AppointmentStatus @default(PENDING)
+    date           String // dia do agendamento YYYY-MM-DD
+    time           String // horário "HH:MM"
+    price          Float
+    duration       Int
+    paymentMode    String?
+    status         AppointmentStatus @default(pendente)
     notes          String?
     createdAt      DateTime          @default(now())
-    professional   User              @relation(fields: [professionalId], references: [id], onDelete: Cascade)
-    client         Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+    user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+    client         Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
     service        Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
     transactions   Transaction[]
 
-    @@index([professionalId, date])
+    @@index([userId, date])
     @@index([clientId])
     @@index([serviceId])
 }
 
 enum TransactionType {
-    INCOME
-    EXPENSE
+    servico
+    sinal
+    produto
 }
 
 // Pagamento / transação financeira do profissional.
 model Transaction {
     id             String          @id @default(cuid())
-    professionalId String
+    userId         String
     agendamentoId  String? // opcional: transação ligada a um agendamento
     type           TransactionType
     category       String?
-    amount         Float
+    value          Float
     description    String?
     date           DateTime
     createdAt      DateTime        @default(now())
-    professional   User            @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+    user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
     agendamento    Appointment?    @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
 
-    @@index([professionalId])
+    @@index([userId])
     @@index([agendamentoId])
 }
 
 // Configurações do negócio (1 por profissional).
 model BusinessConfig {
     id             String   @id @default(cuid())
-    professionalId String   @unique
+    userId         String   @unique
     businessName   String?
     phone          String?
     address        String?
@@ -177,7 +187,7 @@ model BusinessConfig {
     workingHours   Json? // JSON com o expediente semanal
     createdAt      DateTime @default(now())
     updatedAt      DateTime @updatedAt
-    professional   User     @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+    user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Token de redefinição de senha (código de 6 dígitos enviado por e-mail).

@@ -9,7 +9,7 @@ export async function GET() {
     if (!session?.user?.id) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true, name: true, email: true, businessName: true, businessPhone: true, businessAddress: true },
+      select: { id: true, name: true, email: true, image: true, googleImage: true, businessName: true, businessPhone: true, businessAddress: true },
     })
     return NextResponse.json(user)
   } catch (error: any) {

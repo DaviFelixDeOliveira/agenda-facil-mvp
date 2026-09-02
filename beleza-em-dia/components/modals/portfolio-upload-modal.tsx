@@ -10,13 +10,65 @@ interface UploadFileItem {
   id: string
   file: File
   previewUrl: string
+  base64Data: string
   progress: number
-  status: 'uploading' | 'completed' | 'error'
+  status: 'compressing' | 'uploading' | 'completed' | 'error'
 }
 
 interface PortfolioUploadModalProps {
   isOpen: boolean
   onClose: () => void
+}
+
+/**
+ * Utilitário para redimensionar e compactar imagens no Canvas client-side.
+ * Reduz a imagem para no máximo 800x800px com qualidade 0.78 JPEG/WebP.
+ * Isso gera uma string DataURL leve (30-80KB) ideal para persistência no localStorage.
+ */
+async function compressImageToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (readerEvent) => {
+      const img = document.createElement('img')
+      img.onload = () => {
+        const MAX_WIDTH = 800
+        const MAX_HEIGHT = 800
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width)
+            width = MAX_WIDTH
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height)
+            height = MAX_HEIGHT
+          }
+        }
+
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+
+        if (!ctx) {
+          resolve(readerEvent.target?.result as string)
+          return
+        }
+
+        ctx.drawImage(img, 0, 0, width, height)
+        // Exporta como JPEG com compressão
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.78)
+        resolve(compressedDataUrl)
+      }
+      img.onerror = () => reject(new Error('Erro ao processar imagem'))
+      img.src = readerEvent.target?.result as string
+    }
+    reader.onerror = () => reject(new Error('Erro ao ler arquivo'))
+    reader.readAsDataURL(file)
+  })
 }
 
 export function PortfolioUploadModal({ isOpen, onClose }: PortfolioUploadModalProps) {
@@ -52,42 +104,73 @@ export function PortfolioUploadModal({ isOpen, onClose }: PortfolioUploadModalPr
 
   if (!isOpen) return null
 
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return
 
-    const selectedFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
-    
-    if (selectedFiles.length === 0) {
-      toast.error('Por favor, selecione apenas arquivos de imagem.')
+    const rawFiles = Array.from(files)
+
+    // 1. Validação Tudo-ou-Nada por Formato
+    const validExtensions = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+    const hasInvalidFile = rawFiles.some((f) => {
+      const typeValid = validExtensions.includes(f.type.toLowerCase())
+      const nameValid = /\.(jpe?g|png|webp)$/i.test(f.name)
+      return !typeValid && !nameValid
+    })
+
+    if (hasInvalidFile) {
+      toast.error(
+        'Seleção cancelada: um ou mais arquivos selecionados não possuem um formato válido (JPG, PNG, WEBP).'
+      )
+      if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
 
-    if (fileList.length + selectedFiles.length > remainingSlots) {
-      toast.error(`Você só pode adicionar mais ${remainingSlots} foto(s). Limite total de ${maxTotalPhotos}.`)
+    // 2. Limite de Arquivos (Bloqueio estrito)
+    if (fileList.length + rawFiles.length > remainingSlots) {
+      toast.error(
+        `Limite de 20 arquivos excedido. Escolha no máximo ${remainingSlots} arquivo(s).`
+      )
+      if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
 
-    const newItems: UploadFileItem[] = selectedFiles.map((file) => ({
+    // Processa e comprime cada imagem em background
+    const newItems: UploadFileItem[] = rawFiles.map((file) => ({
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       file,
       previewUrl: URL.createObjectURL(file),
+      base64Data: '',
       progress: 0,
-      status: 'uploading',
+      status: 'compressing',
     }))
 
     setFileList((prev) => [...prev, ...newItems])
 
-    // Simula progresso individual de upload para cada arquivo
-    newItems.forEach((item) => {
-      simulateUploadProgress(item.id)
+    // Inicia compressão e upload simulado para cada imagem
+    newItems.forEach(async (item) => {
+      try {
+        const compressedBase64 = await compressImageToDataUrl(item.file)
+        setFileList((prev) =>
+          prev.map((it) =>
+            it.id === item.id ? { ...it, base64Data: compressedBase64, status: 'uploading' } : it
+          )
+        )
+        simulateUploadProgress(item.id)
+      } catch (err) {
+        console.error('Erro na compressão:', err)
+        setFileList((prev) =>
+          prev.map((it) => (it.id === item.id ? { ...it, status: 'error' } : it))
+        )
+      }
     })
+
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const simulateUploadProgress = (itemId: string) => {
-    let current = 0
-    const step = Math.floor(Math.random() * 20) + 15
+    let current = 15
     const interval = setInterval(() => {
-      current += step
+      current += Math.floor(Math.random() * 25) + 20
       if (current >= 100) {
         current = 100
         clearInterval(interval)
@@ -103,7 +186,7 @@ export function PortfolioUploadModal({ isOpen, onClose }: PortfolioUploadModalPr
           )
         )
       }
-    }, 150)
+    }, 120)
   }
 
   const handleDrag = (e: React.DragEvent) => {
@@ -135,7 +218,7 @@ export function PortfolioUploadModal({ isOpen, onClose }: PortfolioUploadModalPr
       return
     }
 
-    const isAnyStillUploading = fileList.some((it) => it.status === 'uploading' && it.progress < 100)
+    const isAnyStillUploading = fileList.some((it) => it.progress < 100 || !it.base64Data)
     if (isAnyStillUploading) {
       toast.info('Aguarde a conclusão do envio de todas as fotos.')
       return
@@ -145,7 +228,7 @@ export function PortfolioUploadModal({ isOpen, onClose }: PortfolioUploadModalPr
 
     const newPortfolioEntries = fileList.map((item) => ({
       id: item.id,
-      src: item.previewUrl,
+      src: item.base64Data || item.previewUrl,
       alt: item.file.name.replace(/\.[^/.]+$/, ''),
     }))
 
@@ -155,7 +238,8 @@ export function PortfolioUploadModal({ isOpen, onClose }: PortfolioUploadModalPr
     onClose()
   }
 
-  const allCompleted = fileList.length > 0 && fileList.every((it) => it.progress >= 100)
+  const allCompleted =
+    fileList.length > 0 && fileList.every((it) => it.progress >= 100 && it.base64Data)
 
   return (
     <div
@@ -171,7 +255,7 @@ export function PortfolioUploadModal({ isOpen, onClose }: PortfolioUploadModalPr
           <div>
             <h3 className="text-lg font-bold text-[#111827] dark:text-white">Adicionar Fotos ao Portfólio</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Disponível: {remainingSlots} vaga(s) de {maxTotalPhotos} fotos.
+              Disponível: <span className="font-semibold text-brand">{remainingSlots} vaga(s)</span> de {maxTotalPhotos} fotos.
             </p>
           </div>
           <button
@@ -200,7 +284,7 @@ export function PortfolioUploadModal({ isOpen, onClose }: PortfolioUploadModalPr
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/*"
+            accept="image/png, image/jpeg, image/webp"
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}
           />
@@ -219,7 +303,7 @@ export function PortfolioUploadModal({ isOpen, onClose }: PortfolioUploadModalPr
           </div>
 
           <p className="text-[11px] text-gray-400 dark:text-gray-500">
-            Formatos suportados: JPG, PNG, WebP (máx. 10MB cada)
+            Formatos válidos: JPG, PNG, WebP (máx. {remainingSlots} arquivos)
           </p>
         </div>
 

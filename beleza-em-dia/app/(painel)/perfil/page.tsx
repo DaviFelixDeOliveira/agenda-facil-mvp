@@ -14,22 +14,62 @@ import {
   Edit3,
   ImageIcon,
   X,
+  Trash2,
+  CheckSquare,
+  Square,
+  Eye,
+  Check,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useModalManager } from '@/context/modal-manager'
 import { PortfolioUploadModal } from '@/components/modals/portfolio-upload-modal'
+import { ImagePreviewModal } from '@/components/modals/image-preview-modal'
 
 export default function PerfilPage() {
-  const { professional, services, portfolio, schedule, updateProfessional } = useMockStore()
+  const { professional, services, portfolio, schedule, updateProfessional, removePortfolioItems } = useMockStore()
   const { open, close, isOpen } = useModalManager()
   const [copied, setCopied] = useState(false)
   const maxFiles = 20
+
+  // Preview e Exclusão em Massa
+  const [previewImage, setPreviewImage] = useState<{ id: string; src: string; alt: string } | null>(null)
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([])
 
   // Form states
   const [formStudio, setFormStudio] = useState(professional.studioName)
   const [formAddress, setFormAddress] = useState(professional.address)
   const [formBio, setFormBio] = useState(professional.bio)
   const [formPhone, setFormPhone] = useState(professional.phoneFormatted)
+
+  const toggleSelectPhoto = (id: string) => {
+    setSelectedPhotoIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
+  const handleSelectAll = () => {
+    if (selectedPhotoIds.length === portfolio.length) {
+      setSelectedPhotoIds([])
+    } else {
+      setSelectedPhotoIds(portfolio.map((p) => p.id))
+    }
+  }
+
+  const handleDeleteSingle = (id: string) => {
+    removePortfolioItems([id])
+    setSelectedPhotoIds((prev) => prev.filter((i) => i !== id))
+    toast.success('Foto removida do portfólio com sucesso!')
+  }
+
+  const handleDeleteSelected = () => {
+    if (selectedPhotoIds.length === 0) return
+    const count = selectedPhotoIds.length
+    removePortfolioItems(selectedPhotoIds)
+    setSelectedPhotoIds([])
+    setIsSelectionMode(false)
+    toast.success(`${count} foto(s) removida(s) do portfólio!`)
+  }
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(professional.publicUrl)
@@ -181,33 +221,165 @@ export default function PerfilPage() {
 
       {/* Portfólio / Galeria */}
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-5 transition-colors">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
             <ImageIcon className="w-4 h-4 text-brand" />
             <h3 className="font-bold text-[#111827] dark:text-white text-sm">Portfólio</h3>
+            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
+              ({portfolio.length} / {maxFiles} fotos)
+            </span>
           </div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{portfolio.length} / {maxFiles} arquivos</span>
+
+          {/* Barra de Ações do Portfólio */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {portfolio.length > 0 && !isSelectionMode && (
+              <button
+                type="button"
+                onClick={() => setIsSelectionMode(true)}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                Gerenciar Fotos
+              </button>
+            )}
+
+            {isSelectionMode && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+                >
+                  {selectedPhotoIds.length === portfolio.length ? (
+                    <>
+                      <CheckSquare className="w-3.5 h-3.5 text-brand" />
+                      Desmarcar Todas
+                    </>
+                  ) : (
+                    <>
+                      <Square className="w-3.5 h-3.5" />
+                      Selecionar Todas ({portfolio.length})
+                    </>
+                  )}
+                </button>
+
+                {selectedPhotoIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelected}
+                    className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors flex items-center gap-1.5 shadow-xs"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Excluir ({selectedPhotoIds.length})
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSelectionMode(false)
+                    setSelectedPhotoIds([])
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
+        {/* Grade de Fotos */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {portfolio.map(img => (
-            <div key={img.id} className="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 relative group">
-              <Image
-                src={img.src}
-                alt={img.alt}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-          ))}
-          {/* Botão adicionar */}
-          <button
-            onClick={() => open('portfolio-upload')}
-            className="aspect-square rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-brand hover:border-brand dark:hover:border-brand transition-colors cursor-pointer"
-          >
-            <Plus className="w-6 h-6" />
-            <span className="text-xs font-medium">Adicionar</span>
-          </button>
+          {portfolio.map((img) => {
+            const isSelected = selectedPhotoIds.includes(img.id)
+            return (
+              <div
+                key={img.id}
+                onClick={() => {
+                  if (isSelectionMode) {
+                    toggleSelectPhoto(img.id)
+                  } else {
+                    setPreviewImage(img)
+                  }
+                }}
+                className={`aspect-square rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 relative group cursor-pointer border-2 transition-all ${
+                  isSelected
+                    ? 'border-brand ring-2 ring-brand/40 shadow-md scale-[0.98]'
+                    : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
+                }`}
+              >
+                <Image
+                  src={img.src}
+                  alt={img.alt || 'Foto do portfólio'}
+                  fill
+                  unoptimized
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+
+                {/* Overlay no Hover / Modo Seleção */}
+                <div
+                  className={`absolute inset-0 transition-opacity flex items-center justify-center gap-2 ${
+                    isSelected
+                      ? 'bg-brand/20 opacity-100'
+                      : 'bg-black/30 opacity-0 group-hover:opacity-100'
+                  }`}
+                >
+                  {!isSelectionMode && (
+                    <div className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 text-gray-800 dark:text-white flex items-center justify-center shadow-md">
+                      <Eye className="w-4 h-4" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Botão de Excluir Individual no Canto Superior Direito (quando fora do modo seleção) */}
+                {!isSelectionMode && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteSingle(img.id)
+                    }}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md z-10"
+                    title="Excluir foto"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {/* Checkbox de Seleção Múltipla */}
+                {isSelectionMode && (
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleSelectPhoto(img.id)
+                    }}
+                    className={`absolute top-2 left-2 w-6 h-6 rounded-lg flex items-center justify-center transition-all z-10 ${
+                      isSelected
+                        ? 'bg-brand text-white shadow-md'
+                        : 'bg-black/40 border border-white/60 text-transparent'
+                    }`}
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Botão Adicionar Fotos */}
+          {portfolio.length < maxFiles && (
+            <button
+              onClick={() => open('portfolio-upload')}
+              className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-brand hover:border-brand dark:hover:border-brand hover:bg-rose-50/20 dark:hover:bg-rose-950/20 transition-all cursor-pointer group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:text-brand group-hover:bg-rose-50 dark:group-hover:bg-rose-950/60 flex items-center justify-center transition-colors">
+                <Plus className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 group-hover:text-brand transition-colors">
+                Adicionar
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -309,6 +481,14 @@ export default function PerfilPage() {
       <PortfolioUploadModal
         isOpen={isOpen('portfolio-upload')}
         onClose={() => close('portfolio-upload')}
+      />
+
+      {/* Modal de Preview Expandido da Imagem */}
+      <ImagePreviewModal
+        isOpen={!!previewImage}
+        image={previewImage}
+        onClose={() => setPreviewImage(null)}
+        onDelete={handleDeleteSingle}
       />
     </div>
   )

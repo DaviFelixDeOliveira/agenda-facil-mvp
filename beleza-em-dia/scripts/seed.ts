@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, AppointmentStatus, TransactionType } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -94,7 +94,14 @@ async function main() {
   const today = new Date().toISOString().split('T')[0]
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
 
-  const appointmentsData = [
+  const appointmentsData: Array<{
+    date: string
+    time: string
+    clientIdx: number
+    serviceIdx: number
+    status: AppointmentStatus
+    paymentMode: string
+  }> = [
     { date: today, time: '09:00', clientIdx: 0, serviceIdx: 0, status: 'confirmado', paymentMode: 'Sinal Pix' },
     { date: today, time: '10:30', clientIdx: 1, serviceIdx: 5, status: 'pendente', paymentMode: 'Sem sinal' },
     { date: today, time: '13:00', clientIdx: 2, serviceIdx: 1, status: 'confirmado', paymentMode: 'Sinal Pix' },
@@ -128,7 +135,7 @@ async function main() {
   }
 
   // Seed transactions
-  const txData = [
+  const txData: Array<{ date: string; description: string; value: number; type: TransactionType }> = [
     { date: '30/08', description: 'Manicure em Gel — Ana B.', value: 90, type: 'servico' },
     { date: '30/08', description: 'Sinal Pix — Juliana P.', value: 30, type: 'sinal' },
     { date: '29/08', description: 'Escova — Carla M.', value: 220, type: 'servico' },

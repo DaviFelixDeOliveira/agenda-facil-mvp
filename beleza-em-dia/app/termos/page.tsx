@@ -2,19 +2,25 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 import { ArrowRight } from 'lucide-react'
 export default function TermosPage() {
   const [agreeTerms, setAgreeTerms] = useState(false)
-  const [agreeMarketing, setAgreeMarketing] = useState(false)
+  const [agreePrivacy, setAgreePrivacy] = useState(false)
+  const [hasReadAll, setHasReadAll] = useState(false)
+  const [agreementError, setAgreementError] = useState('')
   const router = useRouter()
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!agreeTerms) {
-      toast.error('Você precisa aceitar os Termos de Uso e Política de Privacidade.')
+    if (!hasReadAll) {
+      setAgreementError('Leia todo o texto antes de marcar as caixas de aceite.')
       return
     }
+    if (!agreeTerms || !agreePrivacy) {
+      setAgreementError('Esta ação não é possível enquanto as duas caixas não estiverem selecionadas.')
+      return
+    }
+    setAgreementError('')
     router.push('/onboarding')
   }
 
@@ -31,7 +37,13 @@ export default function TermosPage() {
         </div>
 
         {/* Texto rolável dos termos */}
-        <div className="h-64 overflow-y-auto border border-gray-100 dark:border-gray-800 rounded-2xl p-4 bg-gray-50/50 dark:bg-gray-800/50 space-y-4 text-xs text-gray-600 dark:text-gray-300 leading-relaxed scrollbar-thin">
+        <div
+          className="h-64 overflow-y-auto border border-gray-100 dark:border-gray-800 rounded-2xl p-4 bg-gray-50/50 dark:bg-gray-800/50 space-y-4 text-xs text-gray-600 dark:text-gray-300 leading-relaxed scrollbar-thin"
+          onScroll={(event) => {
+            const element = event.currentTarget
+            if (element.scrollTop + element.clientHeight >= element.scrollHeight - 4) setHasReadAll(true)
+          }}
+        >
           <div>
             <h2 className="font-bold text-[#111827] dark:text-white mb-1">1. Introdução</h2>
             <p>
@@ -60,26 +72,29 @@ export default function TermosPage() {
             <input
               type="checkbox"
               checked={agreeTerms}
-              onChange={(e) => setAgreeTerms(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded accent-brand"
-              required
+              onChange={(e) => { setAgreeTerms(e.target.checked); setAgreementError('') }}
+              className="mt-0.5 w-4 h-4 rounded accent-brand disabled:opacity-50"
+              disabled={!hasReadAll}
             />
             <span className="text-xs font-semibold text-[#111827] dark:text-white">
-              Li e concordo com os Termos de Uso e Política de Privacidade *
+              Li e concordo com os Termos de Uso *
             </span>
           </label>
 
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
-              checked={agreeMarketing}
-              onChange={(e) => setAgreeMarketing(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded accent-brand"
+              checked={agreePrivacy}
+              onChange={(e) => { setAgreePrivacy(e.target.checked); setAgreementError('') }}
+              className="mt-0.5 w-4 h-4 rounded accent-brand disabled:opacity-50"
+              disabled={!hasReadAll}
             />
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              Aceito receber comunicações de novidades e ofertas do Beleza em Dia. <span className="font-bold text-gray-400">(OPCIONAL)</span>
+            <span className="text-xs font-semibold text-[#111827] dark:text-white">
+              Li e concordo com a Política de Privacidade *
             </span>
           </label>
+
+          {agreementError && <p className="text-xs font-semibold text-red-600 dark:text-red-400" role="alert">{agreementError}</p>}
 
           <button
             type="submit"

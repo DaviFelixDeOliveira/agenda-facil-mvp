@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useMockStore } from '@/context/mock-store'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { brl, initials } from '@/lib/utils'
 import {
   Search,
-  Phone,
+  CalendarPlus,
   MessageCircle,
   ChevronLeft,
   CalendarDays,
@@ -18,13 +19,22 @@ import {
   X,
 } from 'lucide-react'
 import type { MockClient } from '@/lib/mock-data'
+import { NovoAgendamentoModal } from '@/components/modals/novo-agendamento-modal'
 
 export default function ClientesPage() {
-  const { clients, appointments } = useMockStore()
+  const { clients, appointments, services, setAppointments } = useMockStore()
+  const searchParams = useSearchParams()
   const [search, setSearch] = useState('')
   const [selectedClient, setSelectedClient] = useState<MockClient | null>(null)
   const [editingNotes, setEditingNotes] = useState(false)
   const [notesValue, setNotesValue] = useState('')
+  const [showNewAppointment, setShowNewAppointment] = useState(false)
+
+  useEffect(() => {
+    const clientId = searchParams.get('cliente')
+    const client = clientId ? clients.find((item) => item.id === clientId) : null
+    if (client) openClientDetail(client)
+  }, [clients, searchParams])
 
   const filteredClients = useMemo(() =>
     clients.filter(c =>
@@ -152,13 +162,14 @@ export default function ClientesPage() {
             <MessageCircle className="w-4 h-4" />
             WhatsApp
           </a>
-          <a
-            href={`tel:+55${selectedClient.phone}`}
+          <button
+            type="button"
+            onClick={() => setShowNewAppointment(true)}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors border border-blue-100 dark:border-blue-800"
           >
-            <Phone className="w-4 h-4" />
-            Ligar
-          </a>
+            <CalendarPlus className="w-4 h-4" />
+            + Novo Agendamento
+          </button>
         </div>
       </div>
 
@@ -260,6 +271,36 @@ export default function ClientesPage() {
           )}
         </div>
       </div>
+
+      <NovoAgendamentoModal
+        open={showNewAppointment}
+        onClose={() => setShowNewAppointment(false)}
+        services={services}
+        clients={clients}
+        initialClient={selectedClient}
+        onSave={({ clientName, clientPhone, serviceId, date, time, signalPrice }) => {
+          const service = services.find((item) => item.id === serviceId)
+          const id = `apt_${Date.now()}`
+          setAppointments((previous) => [...previous, {
+            id,
+            clientId: selectedClient.id,
+            clientName,
+            clientPhone,
+            serviceId,
+            serviceName: service?.name || 'Serviço',
+            price: service?.price || 0,
+            duration: service?.duration || 0,
+            date,
+            time,
+            status: signalPrice > 0 ? 'pendente' : 'confirmado',
+            notes: '',
+            signalPaid: false,
+            signalAmount: signalPrice,
+          }])
+          setShowNewAppointment(false)
+          return id
+        }}
+      />
     </div>
   )
 }

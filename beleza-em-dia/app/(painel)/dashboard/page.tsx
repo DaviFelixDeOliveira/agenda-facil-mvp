@@ -58,8 +58,10 @@ export default function DashboardPage() {
   const todayMinutes = activeAppts.reduce((sum, a) => sum + a.duration, 0)
 
   const upcomingAppts = todayAppts
-    .filter(a => a.status !== 'cancelado')
+    .filter(a => a.status !== 'cancelado' && a.status !== 'finalizado')
     .sort((a, b) => a.time.localeCompare(b.time))
+  const nowTime = new Date().toTimeString().slice(0, 5)
+  const nextAppointment = upcomingAppts.find((appointment) => appointment.time >= nowTime) || upcomingAppts[0]
 
   const handleCopy = () => {
     navigator.clipboard.writeText(professional.publicUrl)
@@ -97,8 +99,8 @@ export default function DashboardPage() {
               <p className="text-xs text-gray-400 mt-0.5 uppercase tracking-wide">Agendamentos</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-brand">{brl(todayRevenue)}</p>
-              <p className="text-xs text-gray-400 mt-0.5 uppercase tracking-wide">Ganhos estimados</p>
+              <p className="text-lg font-bold text-brand">{nextAppointment ? `${nextAppointment.time} • ${nextAppointment.clientName}` : 'Nenhum agendamento'}</p>
+              <p className="text-xs text-gray-400 mt-0.5 uppercase tracking-wide">Próximo atendimento</p>
             </div>
           </div>
 
@@ -115,7 +117,7 @@ export default function DashboardPage() {
               className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-semibold text-sm transition-colors"
             >
               <Plus className="w-4 h-4" />
-              + Novo Agendamento
+               Novo Agendamento
             </button>
           </div>
         </div>

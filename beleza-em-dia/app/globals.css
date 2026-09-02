@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: #dc2626 !important;
+  outline: 2px solid rgba(220, 38, 38, 0.18);
+  outline-offset: 1px;
+}
+
 @layer base {
   :root {
     --background: 0 0% 98%;
