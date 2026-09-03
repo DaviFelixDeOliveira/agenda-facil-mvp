@@ -52,3 +52,17 @@ Permitir que o profissional exporte seus relatórios financeiros em formatos pro
 
 ## 4. Segurança Avançada: Autenticação em Duas Etapas (2FA via OTP)
 - Permitir ativação de verificação em duas etapas via aplicativo autenticador (Google Authenticator / Authy) ou código SMS/WhatsApp para logins com e-mail e senha.
+
+---
+
+## 5. Validação de WhatsApp da Profissional (2FA / OTP no Onboarding)
+
+### O que envolveria:
+- Envio de código de verificação de 6 dígitos (OTP) via SMS ou WhatsApp durante o cadastro/onboarding da profissional.
+- Tela de validação do código para confirmar a posse do número antes de liberar a criação do link público (`slug`).
+
+### Benefício:
+- Garantir que 100% dos números cadastrados no sistema pertençam às profissionais, evitando falhas de comunicação com clientes e perda de notificações.
+
+### Status:
+- Postergado pós-MVP para simplificar o fluxo inicial de cadastro e evitar custos com APIs de envio (Twilio/Z-API).
