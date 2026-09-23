@@ -1,5 +1,4 @@
 # 💡 Ideias Futuras — Beleza em Dia
-
 Este documento reúne ideias de evolução do sistema que não fazem parte do escopo atual do MVP, mas que podem ser implementadas em versões futuras.
 
 ---
