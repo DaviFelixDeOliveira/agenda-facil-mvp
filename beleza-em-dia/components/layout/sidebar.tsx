@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import {
   LayoutDashboard,
   CalendarDays,
@@ -95,8 +96,13 @@ export function Sidebar() {
       <LogoutModal
         isOpen={showLogout}
         onClose={() => setShowLogout(false)}
-        onConfirm={() => {
-          window.location.href = '/boas-vindas'
+        onConfirm={async () => {
+          try {
+
+            localStorage.removeItem('user')
+            localStorage.removeItem('token')
+          } catch (_) { }
+          await signOut({ redirectTo: '/login' })
         }}
       />
     </>

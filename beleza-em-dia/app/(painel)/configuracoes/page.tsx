@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { signOut } from 'next-auth/react'
 import { useMockStore } from '@/context/mock-store'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import {
   Building2,
   Clock,
@@ -22,8 +24,6 @@ import {
   Copy,
   Download,
   AlertTriangle,
-  Check,
-  RotateCcw,
   Sparkles,
   Info,
   LogOut,
@@ -34,12 +34,8 @@ import {
   Sun,
   Moon,
   Laptop,
-  Eye,
-  EyeOff,
-  Lock,
   Edit3,
   Plus,
-  X,
 } from 'lucide-react'
 import { LogoutModal } from '@/components/logout-modal'
 import type { MockService } from '@/lib/mock-data'
@@ -49,14 +45,6 @@ function WhatsAppIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0012.04 2zm0 18.15c-1.49 0-2.94-.4-4.22-1.15l-.3-.18-3.13.82.84-3.05-.2-.31a8.21 8.21 0 01-1.26-4.38c0-4.54 3.7-8.24 8.27-8.24 2.2 0 4.28.86 5.84 2.42a8.2 8.2 0 012.43 5.84c0 4.55-3.7 8.23-8.27 8.23zm4.53-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.78 2.71 4.3 3.8 2.53 1.09 2.53.73 2.98.69.46-.04 1.47-.6 1.68-1.18.2-.58.2-1.07.14-1.18-.06-.12-.22-.19-.47-.31z" />
-    </svg>
-  )
-}
-
-function InstagramIcon({ className = 'w-5 h-5' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
     </svg>
   )
 }
@@ -92,6 +80,7 @@ type ConfigSection =
 export default function ConfiguracoesPage() {
   const { professional, schedule, services, updateProfessional, updateService, addService, removeService } = useMockStore()
   const { theme, setTheme } = useTheme()
+  const router = useRouter()
   const [showLogout, setShowLogout] = useState(false)
   const [showDeleteAccount, setShowDeleteAccount] = useState(false)
   const [activeSection, setActiveSection] = useState<ConfigSection>('menu')
@@ -121,7 +110,6 @@ export default function ConfiguracoesPage() {
   const [pixTipo, setPixTipo] = useState<'fixo' | 'porcentagem'>(professional.pixSinalTipo || 'fixo')
   const [pixValue, setPixValue] = useState(professional.pixSinalValor)
   const [pixPorcentagem, setPixPorcentagem] = useState(professional.pixSinalPorcentagem || 30)
-  const [refundPolicy, setRefundPolicy] = useState('24h')
   const [acceptCards, setAcceptCards] = useState(true)
   const [acceptCash, setAcceptCash] = useState(true)
 
@@ -140,49 +128,36 @@ export default function ConfiguracoesPage() {
   const [notifWhatsappReminder, setNotifWhatsappReminder] = useState(true)
 
   // --- 6. Segurança ---
-  const [twoFactor, setTwoFactor] = useState(false)
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [loginType, setLoginType] = useState<'email' | 'google'>('email') // 'email' ou 'google'
 
   // --- Exclusão de Conta ---
   const [deleteCountdown, setDeleteCountdown] = useState(10)
   const [deletePassword, setDeletePassword] = useState('')
-  const [showDeletePassword, setShowDeletePassword] = useState(false)
 
   useEffect(() => {
-    let timer: NodeJS.Timeout
-    if (showDeleteAccount) {
-      setDeleteCountdown(10)
-      setDeletePassword('')
-      setShowDeletePassword(false)
-      timer = setInterval(() => {
-        setDeleteCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
+    if (!showDeleteAccount) return
 
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          setShowDeleteAccount(false)
+    const timer = setInterval(() => {
+      setDeleteCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          return 0
         }
-      }
-      window.addEventListener('keydown', handleKeyDown)
-      return () => {
-        if (timer) clearInterval(timer)
-        window.removeEventListener('keydown', handleKeyDown)
+
+        return prev - 1
+      })
+    }, 1000)
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowDeleteAccount(false)
       }
     }
+
+    window.addEventListener('keydown', handleKeyDown)
+
     return () => {
-      if (timer) clearInterval(timer)
+      clearInterval(timer)
+      window.removeEventListener('keydown', handleKeyDown)
     }
   }, [showDeleteAccount])
 
@@ -191,6 +166,12 @@ export default function ConfiguracoesPage() {
   const [copiedLink, setCopiedLink] = useState(false)
 
   const triggerChange = () => setHasChanges(true)
+
+  const openDeleteAccountModal = () => {
+    setDeleteCountdown(10)
+    setDeletePassword('')
+    setShowDeleteAccount(true)
+  }
 
   const requestLeave = () => {
     if (hasChanges && !window.confirm('Existem alterações não salvas. Deseja sair mesmo assim?')) return false
@@ -253,32 +234,51 @@ export default function ConfiguracoesPage() {
   }
 
   useEffect(() => {
-    // Sincroniza hash inicial caso exista
     const hash = window.location.hash.replace('#', '') as ConfigSection
-    if (hash && ['negocio', 'agenda', 'pagamento', 'local', 'notificacoes', 'compartilhamento', 'seguranca'].includes(hash)) {
-      setActiveSection(hash)
-    }
+    const validSections: ConfigSection[] = [
+      'negocio',
+      'agenda',
+      'pagamento',
+      'local',
+      'notificacoes',
+      'compartilhamento',
+      'seguranca',
+    ]
 
+    if (!validSections.includes(hash)) return
+
+    const frameId = window.requestAnimationFrame(() => {
+      setActiveSection(hash)
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
+  }, [])
+
+  useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       if (hasChanges && !window.confirm('Existem alterações não salvas. Deseja sair mesmo assim?')) {
         window.history.go(1)
         return
       }
+
       if (e.state?.configSection) {
         setActiveSection(e.state.configSection)
       } else {
         setActiveSection('menu')
       }
+
       setHasChanges(false)
     }
 
-    window.addEventListener('popstate', handlePopState)
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!hasChanges) return
       event.preventDefault()
       event.returnValue = ''
     }
+
+    window.addEventListener('popstate', handlePopState)
     window.addEventListener('beforeunload', handleBeforeUnload)
+
     return () => {
       window.removeEventListener('popstate', handlePopState)
       window.removeEventListener('beforeunload', handleBeforeUnload)
@@ -293,8 +293,7 @@ export default function ConfiguracoesPage() {
     { key: 'local' as ConfigSection, label: 'Local de Atendimento', desc: 'No salão, domicílio ou ambos', icon: MapPin },
     { key: 'notificacoes' as ConfigSection, label: 'Notificações', desc: 'Alertas por e-mail e lembretes', icon: Bell },
     { key: 'compartilhamento' as ConfigSection, label: 'Compartilhamento & QR Code', desc: 'Link da bio e divulgação', icon: Share2 },
-    { key: 'seguranca' as ConfigSection, label: 'Segurança e Conta', desc: 'Senha, método de acesso e tema', icon: Shield },
-  ]
+    { key: 'seguranca' as ConfigSection, label: 'Segurança e Conta', desc: 'Método de acesso, conta e tema', icon: Shield },]
 
   const renderBackButton = (title: string) => (
     <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800 mb-5">
@@ -592,18 +591,16 @@ export default function ConfiguracoesPage() {
                 {services.map(svc => (
                   <div
                     key={svc.id}
-                    className={`flex items-center justify-between py-3 px-4 rounded-xl border transition-colors ${
-                      svc.active
-                        ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-100/60 dark:border-gray-700'
-                        : 'bg-gray-100/50 dark:bg-gray-800/30 border-gray-200/40 dark:border-gray-700/40 opacity-60'
-                    }`}
+                    className={`flex items-center justify-between py-3 px-4 rounded-xl border transition-colors ${svc.active
+                      ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-100/60 dark:border-gray-700'
+                      : 'bg-gray-100/50 dark:bg-gray-800/30 border-gray-200/40 dark:border-gray-700/40 opacity-60'
+                      }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                        svc.active
-                          ? 'bg-rose-50 dark:bg-rose-950/50 text-brand'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
-                      }`}>
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${svc.active
+                        ? 'bg-rose-50 dark:bg-rose-950/50 text-brand'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+                        }`}>
                         <Sparkles className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
@@ -614,11 +611,10 @@ export default function ConfiguracoesPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                        svc.active
-                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                      }`}>
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${svc.active
+                        ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                        }`}>
                         {svc.active ? 'Ativo' : 'Inativo'}
                       </span>
                       <button
@@ -697,11 +693,10 @@ export default function ConfiguracoesPage() {
                   setAgendaType('fixa')
                   triggerChange()
                 }}
-                className={`p-4 rounded-2xl border text-left transition-all ${
-                  agendaType === 'fixa'
-                    ? 'border-[#111827] dark:border-gray-500 bg-gray-50 dark:bg-gray-800 ring-1 ring-[#111827] dark:ring-gray-500'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
+                className={`p-4 rounded-2xl border text-left transition-all ${agendaType === 'fixa'
+                  ? 'border-[#111827] dark:border-gray-500 bg-gray-50 dark:bg-gray-800 ring-1 ring-[#111827] dark:ring-gray-500'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <p className="font-bold text-sm text-[#111827] dark:text-white">Agenda Fixa</p>
@@ -721,11 +716,10 @@ export default function ConfiguracoesPage() {
                   setAgendaType('livre')
                   triggerChange()
                 }}
-                className={`p-4 rounded-2xl border text-left transition-all ${
-                  agendaType === 'livre'
-                    ? 'border-[#111827] dark:border-gray-500 bg-gray-50 dark:bg-gray-800 ring-1 ring-[#111827] dark:ring-gray-500'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
+                className={`p-4 rounded-2xl border text-left transition-all ${agendaType === 'livre'
+                  ? 'border-[#111827] dark:border-gray-500 bg-gray-50 dark:bg-gray-800 ring-1 ring-[#111827] dark:ring-gray-500'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <p className="font-bold text-sm text-[#111827] dark:text-white">Agenda Livre / Flexível</p>
@@ -752,9 +746,8 @@ export default function ConfiguracoesPage() {
               {weekSchedule.map((day, idx) => (
                 <div
                   key={day.day}
-                  className={`p-4 rounded-2xl border transition-all ${
-                    day.active ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm' : 'border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 opacity-60'
-                  }`}
+                  className={`p-4 rounded-2xl border transition-all ${day.active ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm' : 'border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 opacity-60'
+                    }`}
                 >
                   {/* Toggle e Nome do Dia */}
                   <div className="flex items-center justify-between mb-3">
@@ -769,14 +762,12 @@ export default function ConfiguracoesPage() {
                         setWeekSchedule(updated)
                         triggerChange()
                       }}
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                        day.active ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-600'
-                      }`}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${day.active ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-600'
+                        }`}
                     >
                       <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          day.active ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${day.active ? 'translate-x-5' : 'translate-x-0'
+                          }`}
                       />
                     </button>
                   </div>
@@ -979,14 +970,12 @@ export default function ConfiguracoesPage() {
                 setPixEnabled(!pixEnabled)
                 triggerChange()
               }}
-              className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
-                pixEnabled ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-700'
-              }`}
+              className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${pixEnabled ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-700'
+                }`}
             >
               <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                  pixEnabled ? 'translate-x-6' : 'translate-x-0'
-                }`}
+                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${pixEnabled ? 'translate-x-6' : 'translate-x-0'
+                  }`}
               />
             </button>
           </div>
@@ -1005,11 +994,10 @@ export default function ConfiguracoesPage() {
                       setPixTipo('fixo')
                       triggerChange()
                     }}
-                    className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                      pixTipo === 'fixo'
-                        ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
-                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
+                    className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${pixTipo === 'fixo'
+                      ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
                   >
                     <DollarSign className="w-4 h-4" />
                     Valor Fixo (R$)
@@ -1021,11 +1009,10 @@ export default function ConfiguracoesPage() {
                       setPixTipo('porcentagem')
                       triggerChange()
                     }}
-                    className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                      pixTipo === 'porcentagem'
-                        ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
-                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
+                    className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${pixTipo === 'porcentagem'
+                      ? 'border-brand bg-rose-50/50 text-brand shadow-xs'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
                   >
                     <Percent className="w-4 h-4" />
                     Porcentagem (%)
@@ -1203,11 +1190,10 @@ export default function ConfiguracoesPage() {
                     setLocationType(loc.key as any)
                     triggerChange()
                   }}
-                  className={`p-4 rounded-2xl border text-left transition-all ${
-                    locationType === loc.key
-                      ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 ring-1 ring-brand'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
+                  className={`p-4 rounded-2xl border text-left transition-all ${locationType === loc.key
+                    ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 ring-1 ring-brand'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
                 >
                   <p className="font-bold text-sm text-[#111827] dark:text-white">{loc.label}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{loc.desc}</p>
@@ -1358,14 +1344,12 @@ export default function ConfiguracoesPage() {
                     setNotifEmailNew(!notifEmailNew)
                     triggerChange()
                   }}
-                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
-                    notifEmailNew ? 'bg-brand' : 'bg-gray-200 dark:bg-gray-700'
-                  }`}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${notifEmailNew ? 'bg-brand' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
                 >
                   <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      notifEmailNew ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${notifEmailNew ? 'translate-x-5' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -1384,14 +1368,12 @@ export default function ConfiguracoesPage() {
                     setNotifEmailCancel(!notifEmailCancel)
                     triggerChange()
                   }}
-                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
-                    notifEmailCancel ? 'bg-brand' : 'bg-gray-200 dark:bg-gray-700'
-                  }`}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${notifEmailCancel ? 'bg-brand' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
                 >
                   <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      notifEmailCancel ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${notifEmailCancel ? 'translate-x-5' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -1410,14 +1392,12 @@ export default function ConfiguracoesPage() {
                     setNotifWhatsappReminder(!notifWhatsappReminder)
                     triggerChange()
                   }}
-                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
-                    notifWhatsappReminder ? 'bg-brand' : 'bg-gray-200 dark:bg-gray-700'
-                  }`}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${notifWhatsappReminder ? 'bg-brand' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
                 >
                   <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      notifWhatsappReminder ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${notifWhatsappReminder ? 'translate-x-5' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -1535,11 +1515,11 @@ export default function ConfiguracoesPage() {
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 lg:p-6 space-y-6 transition-colors">
           {renderBackButton('Segurança e Conta')}
 
-          {/* Método de Acesso (Informativo e Dinâmico) */}
+          {/* Método de Acesso (Google OAuth Exclusivo) */}
           <div className="space-y-3">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Método de Acesso</p>
-            {loginType === 'google' ? (
-              <div className="p-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex items-center gap-3">
+            <div className="p-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center shrink-0 shadow-xs">
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -1553,110 +1533,15 @@ export default function ConfiguracoesPage() {
                     <p className="font-bold text-sm text-[#111827] dark:text-white">Conectado com o Google</p>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">Ativo</span>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{email}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Conta autenticada pelo Google
+                  </p>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="p-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center shrink-0 shadow-xs">
-                    <Mail className="w-5 h-5 text-gray-700 dark:text-gray-200" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-sm text-[#111827] dark:text-white">Acesso via E-mail e Senha</p>
-                      <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 text-[10px] font-bold">Ativo</span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{email}</p>
-                  </div>
-                </div>
-
-                {/* Alterar Senha */}
-                <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Alterar Senha</p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Senha Atual</label>
-                      <div className="relative">
-                        <input
-                          type={showCurrentPassword ? 'text' : 'password'}
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                          aria-label={showCurrentPassword ? 'Ocultar senha' : 'Ver senha'}
-                        >
-                          {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Nova Senha</label>
-                      <div className="relative">
-                        <input
-                          type={showNewPassword ? 'text' : 'password'}
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Mínimo 6 caracteres"
-                          className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                          aria-label={showNewPassword ? 'Ocultar senha' : 'Ver senha'}
-                        >
-                          {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#111827] dark:text-gray-200 mb-1.5">Confirmar Nova Senha</label>
-                      <div className="relative">
-                        <input
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Repita a nova senha"
-                          className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-[#111827] dark:text-white focus:ring-2 focus:ring-brand outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                          aria-label={showConfirmPassword ? 'Ocultar senha' : 'Ver senha'}
-                        >
-                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!newPassword || newPassword !== confirmPassword) {
-                          toast.error('As senhas não coincidem!')
-                          return
-                        }
-                        toast.success('Senha atualizada com sucesso!')
-                        setCurrentPassword('')
-                        setNewPassword('')
-                        setConfirmPassword('')
-                      }}
-                      className="px-5 py-2.5 bg-brand text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-colors shadow-sm"
-                    >
-                      Atualizar Senha
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 hidden sm:inline">
+                Login gerenciado com segurança via Google
+              </span>
+            </div>
           </div>
 
           {/* Preferências de Tema / Aparência */}
@@ -1668,11 +1553,10 @@ export default function ConfiguracoesPage() {
                 <button
                   type="button"
                   onClick={() => setTheme('light')}
-                  className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${
-                    theme === 'light'
-                      ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 text-brand shadow-xs'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                  className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${theme === 'light'
+                    ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 text-brand shadow-xs'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
                 >
                   <Sun className="w-4 h-4" />
                   <span>Claro</span>
@@ -1681,11 +1565,10 @@ export default function ConfiguracoesPage() {
                 <button
                   type="button"
                   onClick={() => setTheme('dark')}
-                  className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${
-                    theme === 'dark'
-                      ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 text-brand shadow-xs'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                  className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${theme === 'dark'
+                    ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 text-brand shadow-xs'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
                 >
                   <Moon className="w-4 h-4" />
                   <span>Escuro</span>
@@ -1694,11 +1577,10 @@ export default function ConfiguracoesPage() {
                 <button
                   type="button"
                   onClick={() => setTheme('system')}
-                  className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${
-                    theme === 'system'
-                      ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 text-brand shadow-xs'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                  className={`py-3 px-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${theme === 'system'
+                    ? 'border-brand bg-rose-50/50 dark:bg-rose-950/50 text-brand shadow-xs'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
                 >
                   <Laptop className="w-4 h-4" />
                   <span>Sistema</span>
@@ -1724,7 +1606,7 @@ export default function ConfiguracoesPage() {
 
               <button
                 type="button"
-                onClick={() => setShowDeleteAccount(true)}
+                onClick={openDeleteAccountModal}
                 className="py-3 px-4 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
               >
                 <Trash2 className="w-4 h-4" />
@@ -1739,8 +1621,12 @@ export default function ConfiguracoesPage() {
       <LogoutModal
         isOpen={showLogout}
         onClose={() => setShowLogout(false)}
-        onConfirm={() => {
-          window.location.href = '/boas-vindas'
+        onConfirm={async () => {
+          try {
+            localStorage.removeItem('user')
+            localStorage.removeItem('token')
+          } catch { }
+          await signOut({ redirectTo: '/login' })
         }}
       />
 
@@ -1765,30 +1651,19 @@ export default function ConfiguracoesPage() {
               </p>
             </div>
 
-            {/* Confirmação de Senha */}
+            {/* Confirmação de Segurança */}
             <div className="text-left space-y-1.5 pt-1">
               <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                Digite sua senha para confirmar:
+                Digite EXCLUIR para confirmar:
               </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type={showDeletePassword ? 'text' : 'password'}
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
-                  placeholder="Sua senha de acesso"
-                  className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-[#111827] dark:text-white focus:ring-2 focus:ring-red-500 outline-none transition-all"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowDeletePassword(!showDeletePassword)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                  aria-label={showDeletePassword ? 'Ocultar senha' : 'Ver senha'}
-                >
-                  {showDeletePassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              </div>
+              <input
+                type="text"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="EXCLUIR"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-[#111827] dark:text-white focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                autoFocus
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 pt-2">
@@ -1801,22 +1676,21 @@ export default function ConfiguracoesPage() {
               </button>
               <button
                 type="button"
-                disabled={deleteCountdown > 0 || !deletePassword.trim()}
+                disabled={deleteCountdown > 0 || deletePassword.trim() !== 'EXCLUIR'}
                 onClick={() => {
-                  if (!deletePassword.trim()) {
-                    toast.error('Por favor, digite sua senha para confirmar a exclusão.')
+                  if (deletePassword.trim() !== 'EXCLUIR') {
+                    toast.error('Por favor, digite EXCLUIR para confirmar.')
                     return
                   }
                   toast.success('Conta excluída com sucesso.')
                   setTimeout(() => {
-                    window.location.href = '/boas-vindas'
+                    router.replace('/boas-vindas')
                   }, 500)
                 }}
-                className={`py-3 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 ${
-                  deleteCountdown > 0 || !deletePassword.trim()
-                    ? 'bg-red-200 dark:bg-red-950/40 text-red-400 dark:text-red-500/50 cursor-not-allowed opacity-75'
-                    : 'bg-red-600 hover:bg-red-700 text-white cursor-pointer active:scale-[0.98]'
-                }`}
+                className={`py-3 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 ${deleteCountdown > 0 || deletePassword.trim() !== 'EXCLUIR'
+                  ? 'bg-red-200 dark:bg-red-950/40 text-red-400 dark:text-red-500/50 cursor-not-allowed opacity-75'
+                  : 'bg-red-600 hover:bg-red-700 text-white cursor-pointer active:scale-[0.98]'
+                  }`}
               >
                 {deleteCountdown > 0 ? (
                   <>

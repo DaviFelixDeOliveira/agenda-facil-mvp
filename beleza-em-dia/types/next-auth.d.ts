@@ -1,26 +1,27 @@
 import { DefaultSession } from 'next-auth';
-import { JWT } from 'next-auth/jwt';
 
 declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
       role?: string;
-      provider?: string; // 'google' | 'credentials'
-      // Add custom fields here
-    } & DefaultSession['user']; // includes name, email, image
+      provider?: string;
+    } & DefaultSession['user'];
   }
 
   interface User {
     id: string;
     role?: string;
-    // Mirror any fields added to Session['user'] above
+    googleImage?: string | null;
+    termsAcceptedAt?: Date | null;
+    privacyAcceptedAt?: Date | null;
+    onboardingCompletedAt?: Date | null;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    id: string;
+    id?: string;
     role?: string;
     provider?: string;
   }

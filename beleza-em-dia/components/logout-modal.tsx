@@ -57,7 +57,7 @@ export function LogoutModal({ isOpen, onClose, onConfirm }: LogoutModalProps) {
         <div className="space-y-1.5">
           <h3 className="text-lg font-bold text-[#111827] dark:text-white">Deseja sair da sua conta?</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
-            Você precisará inserir seu e-mail e senha novamente para acessar seu painel.
+            Você precisará conectar sua conta Google novamente para acessar seu painel.
           </p>
         </div>
 

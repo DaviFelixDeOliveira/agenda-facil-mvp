@@ -1,7 +1,8 @@
 'use client'
-
+import { toast } from 'sonner'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
@@ -62,7 +63,7 @@ export default function OnboardingPage() {
       .then((profile) => {
         if (!savedAvatar && (profile?.image || profile?.googleImage)) setAvatar(profile.image || profile.googleImage)
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   const handleAvatarFile = (file: File | undefined) => {
@@ -241,12 +242,36 @@ export default function OnboardingPage() {
     setTheme(mode)
   }
 
-  const finishOnboarding = () => {
+  const finishOnboarding = async () => {
     setIsSaving(true)
-    window.setTimeout(() => {
-      setIsSaving(false)
+
+    try {
+      const response = await fetch('/api/auth/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.replace('/login')
+          return
+        }
+
+        if (response.status === 403) {
+          router.replace('/termos')
+          return
+        }
+
+        throw new Error('Falha ao concluir o onboarding.')
+      }
+
       setStep(5)
-    }, 900)
+    } catch (error) {
+      console.error('Erro ao salvar onboarding:', error)
+      toast.error('Não foi possível concluir a configuração. Tente novamente.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const goToAgenda = () => {
@@ -302,13 +327,13 @@ export default function OnboardingPage() {
     setDays(updated)
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
       sessionStorage.clear()
       localStorage.removeItem('user')
       localStorage.removeItem('token')
-    } catch (_) {}
-    router.replace('/login')
+    } catch (_) { }
+    await signOut({ redirectTo: '/login' })
   }
 
   return (
@@ -414,14 +439,12 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() => setDomicilio(!domicilio)}
-                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                    domicilio ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${domicilio ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
                 >
                   <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      domicilio ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${domicilio ? 'translate-x-5' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -453,11 +476,10 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setAgendaType(prev => (prev === 'fixa' ? null : 'fixa'))}
-                className={`p-3.5 rounded-2xl border text-left transition-all relative ${
-                  agendaType === 'fixa'
-                    ? 'border-brand bg-rose-50/40 dark:bg-rose-950/30 text-brand shadow-xs'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3.5 rounded-2xl border text-left transition-all relative ${agendaType === 'fixa'
+                  ? 'border-brand bg-rose-50/40 dark:bg-rose-950/30 text-brand shadow-xs'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold">Agenda Fixa</span>
@@ -475,11 +497,10 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setAgendaType(prev => (prev === 'flexivel' ? null : 'flexivel'))}
-                className={`p-3.5 rounded-2xl border text-left transition-all relative ${
-                  agendaType === 'flexivel'
-                    ? 'border-brand bg-rose-50/40 dark:bg-rose-950/30 text-brand shadow-xs'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3.5 rounded-2xl border text-left transition-all relative ${agendaType === 'flexivel'
+                  ? 'border-brand bg-rose-50/40 dark:bg-rose-950/30 text-brand shadow-xs'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold">Agenda Flexível</span>
@@ -559,14 +580,12 @@ export default function OnboardingPage() {
                         updated[idx].active = !updated[idx].active
                         setDays(updated)
                       }}
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                        day.active ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-600'
-                      }`}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${day.active ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-600'
+                        }`}
                     >
                       <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          day.active ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${day.active ? 'translate-x-5' : 'translate-x-0'
+                          }`}
                       />
                     </button>
                   </div>
@@ -585,11 +604,10 @@ export default function OnboardingPage() {
                                 updated[idx].fixedMode = 'continuo'
                                 setDays(updated)
                               }}
-                              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold transition-all ${
-                                day.fixedMode === 'continuo'
-                                  ? 'bg-white dark:bg-gray-700 text-[#111827] dark:text-white shadow-xs'
-                                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                              }`}
+                              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold transition-all ${day.fixedMode === 'continuo'
+                                ? 'bg-white dark:bg-gray-700 text-[#111827] dark:text-white shadow-xs'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                }`}
                             >
                               Expediente Contínuo
                             </button>
@@ -600,11 +618,10 @@ export default function OnboardingPage() {
                                 updated[idx].fixedMode = 'pontual'
                                 setDays(updated)
                               }}
-                              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold transition-all ${
-                                day.fixedMode === 'pontual'
-                                  ? 'bg-white dark:bg-gray-700 text-[#111827] dark:text-white shadow-xs'
-                                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                              }`}
+                              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold transition-all ${day.fixedMode === 'pontual'
+                                ? 'bg-white dark:bg-gray-700 text-[#111827] dark:text-white shadow-xs'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                }`}
                             >
                               Horários Pontuais
                             </button>
@@ -725,11 +742,10 @@ export default function OnboardingPage() {
                                 }
                                 setDays(updated)
                               }}
-                              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold transition-all ${
-                                day.flexibleMode === 'faixas'
-                                  ? 'bg-white dark:bg-gray-700 text-[#111827] dark:text-white shadow-xs'
-                                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                              }`}
+                              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold transition-all ${day.flexibleMode === 'faixas'
+                                ? 'bg-white dark:bg-gray-700 text-[#111827] dark:text-white shadow-xs'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                }`}
                             >
                               Faixas de Horário
                             </button>
@@ -740,11 +756,10 @@ export default function OnboardingPage() {
                                 updated[idx].flexibleMode = 'whatsapp'
                                 setDays(updated)
                               }}
-                              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold transition-all ${
-                                day.flexibleMode === 'whatsapp'
-                                  ? 'bg-white dark:bg-gray-700 text-[#111827] dark:text-white shadow-xs'
-                                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                              }`}
+                              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold transition-all ${day.flexibleMode === 'whatsapp'
+                                ? 'bg-white dark:bg-gray-700 text-[#111827] dark:text-white shadow-xs'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                }`}
                             >
                               Combinar no WhatsApp
                             </button>
@@ -932,11 +947,10 @@ export default function OnboardingPage() {
               {services.filter((svc) => selectedCategories.includes(svc.category)).map((svc, idx) => (
                 <div
                   key={svc.id}
-                  className={`p-4 rounded-2xl border transition-all ${
-                    svc.checked
-                      ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/80 shadow-sm'
-                      : 'border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30'
-                  }`}
+                  className={`p-4 rounded-2xl border transition-all ${svc.checked
+                    ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/80 shadow-sm'
+                    : 'border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30'
+                    }`}
                 >
                   <label className="flex items-center gap-3 cursor-pointer mb-3">
                     <input
@@ -976,10 +990,10 @@ export default function OnboardingPage() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[10px] text-gray-700 dark:text-gray-300 uppercase font-bold mb-1">Preço (R$)</label>
-                            <input
-                              type="text"
-                              value={svc.price}
-                              onChange={(e) => setServices((prev) => prev.map((item) => item.id === svc.id ? { ...item, price: e.target.value } : item))}
+                          <input
+                            type="text"
+                            value={svc.price}
+                            onChange={(e) => setServices((prev) => prev.map((item) => item.id === svc.id ? { ...item, price: e.target.value } : item))}
                             className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand outline-none"
                           />
                         </div>
@@ -1061,16 +1075,14 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => handleSelectTheme('light')}
-                className={`p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
-                  selectedTheme === 'light'
-                    ? 'border-brand bg-rose-50/50 dark:bg-rose-950/30 shadow-xs'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
+                className={`p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${selectedTheme === 'light'
+                  ? 'border-brand bg-rose-50/50 dark:bg-rose-950/30 shadow-xs'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
               >
                 <div className="flex items-center gap-3.5">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    selectedTheme === 'light' ? 'bg-brand text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedTheme === 'light' ? 'bg-brand text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                    }`}>
                     <Sun className="w-5 h-5" />
                   </div>
                   <div>
@@ -1089,16 +1101,14 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => handleSelectTheme('dark')}
-                className={`p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
-                  selectedTheme === 'dark'
-                    ? 'border-brand bg-rose-50/50 dark:bg-rose-950/30 shadow-xs'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
+                className={`p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${selectedTheme === 'dark'
+                  ? 'border-brand bg-rose-50/50 dark:bg-rose-950/30 shadow-xs'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
               >
                 <div className="flex items-center gap-3.5">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    selectedTheme === 'dark' ? 'bg-brand text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedTheme === 'dark' ? 'bg-brand text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                    }`}>
                     <Moon className="w-5 h-5" />
                   </div>
                   <div>
@@ -1117,16 +1127,14 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => handleSelectTheme('system')}
-                className={`p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
-                  selectedTheme === 'system'
-                    ? 'border-brand bg-rose-50/50 dark:bg-rose-950/30 shadow-xs'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
+                className={`p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${selectedTheme === 'system'
+                  ? 'border-brand bg-rose-50/50 dark:bg-rose-950/30 shadow-xs'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
               >
                 <div className="flex items-center gap-3.5">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    selectedTheme === 'system' ? 'bg-brand text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedTheme === 'system' ? 'bg-brand text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                    }`}>
                     <Laptop className="w-5 h-5" />
                   </div>
                   <div>

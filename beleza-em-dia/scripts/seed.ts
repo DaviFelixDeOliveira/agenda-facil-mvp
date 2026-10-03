@@ -1,36 +1,24 @@
 import { PrismaClient, AppointmentStatus, TransactionType } from '@prisma/client'
-import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  // Hidden test account
-  const testPassword = await bcrypt.hash('SBc@2oGv5a', 10)
-  const testUser = await prisma.user.upsert({
-    where: { email: 'abacus-b5b87ba2@example.com' },
-    update: {},
-    create: {
-      email: 'abacus-b5b87ba2@example.com',
-      password: testPassword,
-      name: 'Admin Teste',
-      role: 'admin',
-      businessName: 'Estúdio Beleza em Dia',
-    },
-  })
+  const now = new Date()
 
   // Demo professional account
-  const demoPassword = await bcrypt.hash('beleza123', 10)
   const demoUser = await prisma.user.upsert({
-    where: { email: 'profissional@belezaemdia.com' },
+    where: { email: 'demo-profissional@seed.local' },
     update: {},
     create: {
-      email: 'profissional@belezaemdia.com',
-      password: demoPassword,
+      email: 'demo-profissional@seed.local',
       name: 'Marina Silva',
       role: 'professional',
       businessName: 'Estúdio Marina',
       businessPhone: '(11) 98765-4321',
       businessAddress: 'Rua das Flores, 123 - São Paulo',
+      termsAcceptedAt: now,
+      privacyAcceptedAt: now,
+      onboardingCompletedAt: now,
     },
   })
 
@@ -102,14 +90,14 @@ async function main() {
     status: AppointmentStatus
     paymentMode: string
   }> = [
-    { date: today, time: '09:00', clientIdx: 0, serviceIdx: 0, status: 'confirmado', paymentMode: 'Sinal Pix' },
-    { date: today, time: '10:30', clientIdx: 1, serviceIdx: 5, status: 'pendente', paymentMode: 'Sem sinal' },
-    { date: today, time: '13:00', clientIdx: 2, serviceIdx: 1, status: 'confirmado', paymentMode: 'Sinal Pix' },
-    { date: today, time: '15:00', clientIdx: 3, serviceIdx: 3, status: 'finalizado', paymentMode: 'Integral' },
-    { date: today, time: '16:30', clientIdx: 4, serviceIdx: 6, status: 'cancelado', paymentMode: 'Sem sinal' },
-    { date: tomorrow, time: '09:30', clientIdx: 4, serviceIdx: 2, status: 'confirmado', paymentMode: 'Sinal Pix' },
-    { date: tomorrow, time: '14:00', clientIdx: 0, serviceIdx: 4, status: 'pendente', paymentMode: 'Sem sinal' },
-  ]
+      { date: today, time: '09:00', clientIdx: 0, serviceIdx: 0, status: 'confirmado', paymentMode: 'Sinal Pix' },
+      { date: today, time: '10:30', clientIdx: 1, serviceIdx: 5, status: 'pendente', paymentMode: 'Sem sinal' },
+      { date: today, time: '13:00', clientIdx: 2, serviceIdx: 1, status: 'confirmado', paymentMode: 'Sinal Pix' },
+      { date: today, time: '15:00', clientIdx: 3, serviceIdx: 3, status: 'finalizado', paymentMode: 'Integral' },
+      { date: today, time: '16:30', clientIdx: 4, serviceIdx: 6, status: 'cancelado', paymentMode: 'Sem sinal' },
+      { date: tomorrow, time: '09:30', clientIdx: 4, serviceIdx: 2, status: 'confirmado', paymentMode: 'Sinal Pix' },
+      { date: tomorrow, time: '14:00', clientIdx: 0, serviceIdx: 4, status: 'pendente', paymentMode: 'Sem sinal' },
+    ]
 
   for (let i = 0; i < appointmentsData.length; i++) {
     const a = appointmentsData[i]
