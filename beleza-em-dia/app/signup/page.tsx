@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -107,7 +108,7 @@ export default function SignupPage() {
         {/* Botão Google */}
         <button
           type="button"
-          onClick={() => router.push('/termos')}
+          onClick={() => signIn('google', { redirectTo: '/termos' })}
           className="w-full py-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl font-semibold text-xs text-[#111827] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors flex items-center justify-center gap-2 shadow-sm"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
